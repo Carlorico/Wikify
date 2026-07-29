@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block titolo %}Regole di tipologia, Wikify{% endblock %}
+{% block contenuto %}
+<div class="testata-pagina">
+  <h1>Archivio logico, regole di tipologia</h1>
+  <div class="azioni-inline">
+    <a class="bottone" href="{{ url_for('archivio.regola_nuova') }}">Nuova regola</a>
+    <a class="bottone bottone-secondario" href="{{ url_for('archivio.consolidamento') }}">Consolidamento</a>
+  </div>
+</div>
+<p class="nota-piccola">Classificazione deterministica sul nome del file, sul percorso e
+sull'estensione: nessuna lettura del contenuto. Le regole sono ordinate per priorità,
+vince la prima che riscontra; i documenti che nessuna regola intercetta restano
+"non classificato", un esito legittimo e misurato.</p>
+
+<div class="tabella-scroll">
+<table>
+  <tr>
+    <th>Priorità</th><th>Nome</th><th>Tipologia assegnata</th><th>Stato</th><th>Azioni</th>
+  </tr>
+  {% for r in regole %}
+  <tr>
+    <td>{{ loop.index }}</td>
+    <td><strong>{{ r.nome }}</strong></td>
+    <td>{{ r.tipologia }}</td>
+    <td>
+      {% if r.attiva %}<span class="badge badge-on">attiva</span>
+      {% else %}<span class="badge badge-off">disattivata</span>{% endif %}
+    </td>
+    <td>
+      <div class="azioni-inline">
+        <form method="post" action="{{ url_for('archivio.regola_sposta', rid=r.id) }}">
+          <input type="hidden" name="direzione" value="su">
+          <button type="submit" class="bottone-secondario bottone-piccolo"
+                  {% if loop.first %}disabled{% endif %}>&#8593; Su</button>
+        </form>
+        <form method="post" action="{{ url_for('archivio.regola_sposta', rid=r.id) }}">
+          <input type="hidden" name="direzione" value="giu">
+          <button type="submit" class="bottone-secondario bottone-piccolo"
+                  {% if loop.last %}disabled{% endif %}>&#8595; Giù</button>
+        </form>
+        <a class="bottone bottone-secondario bottone-piccolo"
+           href="{{ url_for('archivio.regola_modifica', rid=r.id) }}">Modifica</a>
+        <form method="post" action="{{ url_for('archivio.regola_toggle', rid=r.id) }}">
+          <button type="submit" class="bottone-secondario bottone-piccolo">
+            {% if r.attiva %}Disattiva{% else %}Attiva{% endif %}
+          </button>
+        </form>
+        <form method="post" action="{{ url_for('archivio.regola_elimina', rid=r.id) }}"
+              onsubmit="return confirm('Eliminare definitivamente la regola {{ r.nome }}? In alternativa è possibile disattivarla.');">
+          <button type="submit" class="bottone-pericolo bottone-piccolo">Elimina</button>
+        </form>
+      </div>
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5">Nessuna regola di tipologia definita: creare la prima con "Nuova regola".</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

@@ -136,6 +136,16 @@ td.rompi { word-break: break-all; }
 .badge-Riservato { background: var(--alta); }
 .badge-Condivisibile { background: var(--ok); }
 .badge-Da { background: #7f8c8d; }
+/* Archivio logico: riservatezza consolidata (vocabolario Validazione AI,
+   minuscolo) e stati di classificazione. */
+.badge-riservato { background: var(--alta); }
+.badge-condivisibile { background: var(--ok); }
+.badge-misto { background: var(--media); }
+.badge-non_classificato { background: #95a5a6; }
+.badge-manuale { background: var(--blu); }
+.badge-validazione { background: var(--ok); }
+.badge-regola { background: #7f8c8d; }
+.badge-triage { background: #7f8c8d; }
 
 /* Form */
 label { display: block; font-weight: 600; margin: 12px 0 4px; color: #333; }

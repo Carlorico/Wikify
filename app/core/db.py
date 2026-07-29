@@ -349,8 +349,50 @@ CREATE INDEX IF NOT EXISTS idx_lotti_sessione
     ON lotti_validazione(sessione_id);
 """
 
+# V7: modulo Archivio logico (progettazione_moduli.md, Modulo 5). Migrazione
+# puramente additiva: nessuna tabella esistente viene toccata. Il documento
+# diventa un oggetto di prima classe del catalogo, con tipologia e
+# riservatezza consolidate secondo le tre precedenze manuale > validazione >
+# regola/triage (v. core/archivio.py). "documenti.entita_id" e
+# "documenti.tipologia_regola_id" non dichiarano REFERENCES: sono
+# collegamenti derivati e ricalcolati a ogni consolidamento (non un vincolo
+# di integrita' referenziale permanente), coerentemente con la natura non
+# distruttiva della ricostruzione: un'entita' o una regola cancellate non
+# devono impedire la lettura dei documenti gia' scritti.
+SCHEMA_V7 = """
+CREATE TABLE IF NOT EXISTS regole_tipologia (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome           TEXT NOT NULL,
+    tipologia      TEXT NOT NULL,
+    criterio_json  TEXT NOT NULL DEFAULT '{}',
+    priorita       INTEGER NOT NULL DEFAULT 0,
+    attiva         INTEGER NOT NULL DEFAULT 1,
+    data_creazione TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_regole_tipologia_priorita
+    ON regole_tipologia(priorita);
+
+CREATE TABLE IF NOT EXISTS documenti (
+    id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+    percorso_rel         TEXT NOT NULL UNIQUE,
+    cartella_progetto    TEXT DEFAULT '',
+    entita_id            INTEGER,
+    tipologia            TEXT NOT NULL DEFAULT 'non_classificato',
+    tipologia_origine    TEXT NOT NULL DEFAULT 'regola',
+    tipologia_regola_id  INTEGER,
+    riservatezza         TEXT DEFAULT '',
+    riservatezza_origine TEXT DEFAULT '',
+    stato                TEXT NOT NULL DEFAULT 'attivo',
+    data_aggiornamento   TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_documenti_cartella ON documenti(cartella_progetto);
+CREATE INDEX IF NOT EXISTS idx_documenti_entita ON documenti(entita_id);
+CREATE INDEX IF NOT EXISTS idx_documenti_tipologia ON documenti(tipologia);
+"""
+
 # Per una futura migrazione: accodare qui un nuovo script SQL.
-MIGRAZIONI = [SCHEMA_V1, SCHEMA_V2, SCHEMA_V3, SCHEMA_V4, SCHEMA_V5, SCHEMA_V6]
+MIGRAZIONI = [SCHEMA_V1, SCHEMA_V2, SCHEMA_V3, SCHEMA_V4, SCHEMA_V5, SCHEMA_V6,
+              SCHEMA_V7]
 
 
 def get_secret_key():

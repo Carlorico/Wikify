@@ -3,8 +3,8 @@
 Modulo Manutenzione: reset dell'archivio.
 
 Il reset elimina i dati derivati dall'analisi dell'archivio (inventario,
-scansioni, triage, catalogo, validazione, sessioni di analisi) e i file
-temporanei del wizard di arricchimento. Restano invariati il dizionario
+scansioni, triage, catalogo, validazione, sessioni di analisi, archivio
+logico) e i file temporanei del wizard di arricchimento. Restano invariati il dizionario
 dei pattern (tabella regole), l'anagrafica utenti e le impostazioni,
 salvo le chiavi che descrivono lo stato dell'inventario: si tratta di un
 timestamp e di un esito legati a una mappa che, dopo il reset, non esiste
@@ -27,6 +27,11 @@ from core.inventario import CHIAVE_ESITO_CHECK, CHIAVE_ULTIMO_CHECK
 # attivo sia con i vincoli disattivi, senza dover contare sull'ON DELETE
 # CASCADE dichiarato solo su una parte delle relazioni.
 TABELLE_RESET = (
+    # Archivio logico (Modulo 5): "documenti" si collega a entita' e a
+    # regole_tipologia (collegamento derivato, non un vincolo REFERENCES:
+    # v. core/db.py), va comunque svuotata per prima delle due.
+    "documenti",
+    "regole_tipologia",
     # Sessioni di analisi (Modulo 4 / connettore MCP)
     "sessioni_analisi_letture",
     # Validazione AI

@@ -55,6 +55,24 @@
         <span class="testo-voce">Arricchimento dati</span>
       </a>
     </details>
+    {% set sezione_archivio = ep.startswith('archivio.') %}
+    <details class="sezione-menu" {% if sezione_archivio %}open{% endif %}>
+      <summary class="voce-menu voce-sezione {{ 'attiva' if sezione_archivio }}">
+        <span class="icona-voce">&#128193;</span><span class="testo-voce">Archivio logico</span>
+      </summary>
+      <a class="voce-menu sotto-voce {{ 'attiva' if ep.startswith('archivio.regole') or ep.startswith('archivio.regola_') }}" href="{{ url_for('archivio.regole') }}">
+        <span class="testo-voce">Regole di tipologia</span>
+      </a>
+      <a class="voce-menu sotto-voce {{ 'attiva' if ep.startswith('archivio.consolidamento') }}" href="{{ url_for('archivio.consolidamento') }}">
+        <span class="testo-voce">Consolidamento</span>
+      </a>
+      <a class="voce-menu sotto-voce {{ 'attiva' if ep.startswith('archivio.esplora') or ep.startswith('archivio.documento') }}" href="{{ url_for('archivio.esplora') }}">
+        <span class="testo-voce">Esplora archivio</span>
+      </a>
+      <a class="voce-menu sotto-voce {{ 'attiva' if ep.startswith('archivio.completezza') }}" href="{{ url_for('archivio.completezza') }}">
+        <span class="testo-voce">Completezza per entità</span>
+      </a>
+    </details>
     {% set sezione_validazione = ep.startswith('validazione.') %}
     <details class="sezione-menu" {% if sezione_validazione %}open{% endif %}>
       <summary class="voce-menu voce-sezione {{ 'attiva' if sezione_validazione }}">

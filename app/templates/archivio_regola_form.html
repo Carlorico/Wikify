@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block titolo %}{% if regola %}Modifica regola di tipologia{% else %}Nuova regola di tipologia{% endif %}, Wikify{% endblock %}
+{% block contenuto %}
+<h1>{% if regola %}Modifica regola: {{ regola.nome }}{% else %}Nuova regola di tipologia{% endif %}</h1>
+<p class="nota-piccola">Costruzione guidata, senza espressioni regolari: si osserva un campo
+del documento (nome file, percorso, cartella progetto o estensione), si sceglie il modo di
+confronto e si indicano uno o più valori (uno per riga). Il confronto non distingue
+maiuscole e minuscole e ignora gli accenti. Prima di salvare è obbligatoria la prova live
+sui nomi reali dei file dell'inventario.</p>
+
+<form method="post" class="scheda">
+  <label for="nome">Nome della regola</label>
+  <input type="text" id="nome" name="nome" required
+         value="{{ (form.get('nome') if form else (regola.nome if regola else '')) or '' }}"
+         placeholder="es. Manuali di installazione">
+
+  <label for="tipologia">Tipologia assegnata</label>
+  <select id="tipologia" name="tipologia">
+    {% set tip_sel = (form.get('tipologia') if form else tipologia_sel) or '' %}
+    <option value="">Scegliere...</option>
+    {% for t in tipologie %}
+    <option value="{{ t }}" {% if t == tip_sel %}selected{% endif %}>{{ t }}</option>
+    {% endfor %}
+  </select>
+
+  <h2>Criterio</h2>
+  {% set campo_sel = (form.get('campo') if form else parametri.get('campo')) or 'nome_file' %}
+  {% set modo_sel = (form.get('modo') if form else parametri.get('modo')) or 'contiene' %}
+  <div class="riga-campi">
+    <div>
+      <label for="campo">Campo osservato</label>
+      <select id="campo" name="campo">
+        {% for chiave, etichetta in campi.items() %}
+        <option value="{{ chiave }}" {% if chiave == campo_sel %}selected{% endif %}>{{ etichetta }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="modo">Modo di confronto</label>
+      <select id="modo" name="modo">
+        {% for chiave, etichetta in modi.items() %}
+        <option value="{{ chiave }}" {% if chiave == modo_sel %}selected{% endif %}>{{ etichetta }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  <label for="valori">Valori da confrontare (uno per riga)</label>
+  <textarea id="valori" name="valori"
+            placeholder="es. manuale_installazione&#10;manuale installazione">{{ (form.get('valori') if form else parametri.get('valori')) or '' }}</textarea>
+  <p class="aiuto" id="aiuto-estensione" style="display:none">Con "Estensione tra" il campo
+  osservato è sempre l'estensione del file: indicare le estensioni con o senza il punto
+  iniziale (es. "pdf" oppure ".pdf").</p>
+
+  <div style="margin-top:18px" class="azioni-inline">
+    <button type="submit" name="azione" value="prova" class="bottone-secondario">Prova sui nomi reali</button>
+    {% if prova is not none %}
+    <button type="submit" name="azione" value="salva">Salva</button>
+    {% endif %}
+    <a class="bottone bottone-secondario" href="{{ url_for('archivio.regole') }}">Annulla</a>
+  </div>
+
+  {% if prova is not none %}
+  <h2>Prova live sui nomi reali dei file dell'inventario</h2>
+  <p class="nota-piccola">{{ prova.n_match }} documenti intercettati su {{ prova.n_totale }}
+  presenti in inventario.</p>
+  <div class="tabella-scroll">
+  <table>
+    <tr><th>Percorso intercettato</th></tr>
+    {% for esempio in prova.esempi %}
+    <tr><td class="rompi">{{ esempio }}</td></tr>
+    {% else %}
+    <tr><td>Nessun documento intercettato da questo criterio.</td></tr>
+    {% endfor %}
+  </table>
+  </div>
+  {% if prova.n_match > prova.esempi | length %}
+  <p class="nota-piccola">Mostrati i primi {{ prova.esempi | length }} esempi.</p>
+  {% endif %}
+  {% endif %}
+</form>
+{% endblock %}
+
+{% block script %}
+<script>
+(function () {
+  var selettoreModo = document.getElementById("modo");
+  var selettoreCampo = document.getElementById("campo");
+  var aiuto = document.getElementById("aiuto-estensione");
+  function applica() {
+    var estensione = selettoreModo.value === "estensione_tra";
+    selettoreCampo.disabled = estensione;
+    if (estensione) selettoreCampo.value = "estensione";
+    aiuto.style.display = estensione ? "" : "none";
+  }
+  selettoreModo.addEventListener("change", applica);
+  applica();
+})();
+</script>
+{% endblock %}

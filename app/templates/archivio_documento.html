@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block titolo %}Documento {{ doc.percorso_rel }}, Wikify{% endblock %}
+{% block contenuto %}
+<div class="testata-pagina">
+  <h1>Scheda documento</h1>
+  <a class="bottone bottone-secondario" href="{{ url_for('archivio.esplora') }}">Torna a Esplora archivio</a>
+</div>
+
+<div class="scheda">
+  <table>
+    <tr><th style="width:220px">Percorso</th><td class="rompi">{{ doc.percorso_rel }}</td></tr>
+    <tr><th>Cartella progetto</th><td class="rompi">{{ doc.cartella_progetto or "(radice)" }}</td></tr>
+    <tr><th>Entità collegata</th><td>
+      {% if doc.entita_chiave %}{{ doc.entita_tipo_nome }} / {{ doc.entita_chiave }}
+      {% else %}<span class="nota-piccola">nessuna (orfano o senza aggancio)</span>{% endif %}
+    </td></tr>
+    <tr><th>Tipologia</th><td>
+      <strong>{{ doc.tipologia }}</strong>
+      <span class="badge badge-{{ doc.tipologia_origine }}">{{ doc.tipologia_origine }}</span>
+      {% if doc.regola_nome %}<div class="nota-piccola">Regola applicata: {{ doc.regola_nome }}</div>{% endif %}
+    </td></tr>
+    <tr><th>Riservatezza</th><td>
+      {% if doc.riservatezza %}
+      <strong>{{ doc.riservatezza }}</strong>
+      <span class="badge badge-{{ doc.riservatezza }}">{{ doc.riservatezza }}</span>
+      {% if doc.riservatezza_origine %}<span class="badge badge-{{ doc.riservatezza_origine }}">{{ doc.riservatezza_origine }}</span>{% endif %}
+      {% else %}<span class="nota-piccola">non qualificata</span>{% endif %}
+    </td></tr>
+    <tr><th>Stato</th><td>
+      {% if doc.stato == 'attivo' %}<span class="badge badge-on">attivo</span>
+      {% else %}<span class="badge badge-media">assente dall'inventario</span>{% endif %}
+    </td></tr>
+    <tr><th>Ultimo aggiornamento</th><td>{{ doc.data_aggiornamento or "" }}</td></tr>
+  </table>
+</div>
+
+<h2>Correzione manuale della tipologia</h2>
+<p class="nota-piccola">La correzione manuale diventa la precedenza massima: i prossimi
+consolidamenti non la sovrascriveranno più, finché non la si corregge di nuovo da qui.</p>
+<form method="post" class="scheda" action="{{ url_for('archivio.documento_correggi', did=doc.id) }}">
+  <label for="tipologia">Tipologia corretta</label>
+  <select id="tipologia" name="tipologia">
+    {% for t in tipologie %}
+    <option value="{{ t }}" {% if t == doc.tipologia %}selected{% endif %}>{{ t }}</option>
+    {% endfor %}
+    <option value="non_classificato" {% if doc.tipologia == "non_classificato" %}selected{% endif %}>non_classificato</option>
+  </select>
+  <div style="margin-top:14px">
+    <button type="submit">Salva correzione</button>
+  </div>
+</form>
+{% endblock %}

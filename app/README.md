@@ -96,12 +96,15 @@ pulsante hamburger (lo stato viene ricordato dal browser). Voci:
    in evidenza nella pagina Storico;
 3. **Catalogo**, sezione espandibile con le sotto-voci "Definizione
    entità" e "Arricchimento dati";
-4. **Validazione AI**, sezione espandibile con le sotto-voci "Perimetro
+4. **Archivio logico**, sezione espandibile con le sotto-voci "Regole di
+   tipologia", "Consolidamento", "Esplora archivio" e "Completezza per
+   entità";
+5. **Validazione AI**, sezione espandibile con le sotto-voci "Perimetro
    e bozze", "Coda di revisione", "Metriche" e "Impostazioni analisi";
-5. **Utenti** (anagrafica);
-6. **Password** (cambio PIN dell'utente connesso: PIN attuale e nuovo
+6. **Utenti** (anagrafica);
+7. **Password** (cambio PIN dell'utente connesso: PIN attuale e nuovo
    PIN ripetuto due volte, stesse regole 4-6 cifre);
-7. **Logout**.
+8. **Logout**.
 
 La voce attiva è evidenziata. A finestra stretta la sidebar si dispone
 sopra il contenuto.
@@ -276,6 +279,109 @@ proposte generate per campo, scarti per motivo, durata, token stimati
 primario; le metriche di accuratezza esistenti restano inoltre
 filtrabili per sessione, oltre che per lotto.
 
+## Modulo Archivio logico
+
+Il modulo (menu "Archivio logico", dopo "Catalogo") chiude la prima versione
+di Wikify: consegna un archivio logico e organizzato, in cui il documento è
+un oggetto di prima classe con una tipologia e una riservatezza consolidate,
+anziché una proprietà sparsa tra inventario, triage e validazioni. Nessuna
+componente AI: il consolidamento è interamente deterministico e
+riproducibile, a partire da ciò che i moduli precedenti hanno già prodotto.
+
+### Principio di consolidamento
+
+Ogni documento riceve tipologia e riservatezza da tre sorgenti, con
+precedenza esplicita e tracciata: **manuale** (correzione dell'operatore
+sulla scheda documento) prevale sempre su **validazione** (proposta
+confermata o corretta in Validazione AI), che prevale su **regola**
+(tipologia) / **triage** (riservatezza), la derivazione automatica
+ricalcolata a ogni consolidamento. La ricostruzione è idempotente e non
+distruttiva: rieseguirla non altera mai le assegnazioni di precedenza
+superiore e produce sempre un report di ciò che ha cambiato.
+
+### Regole di tipologia
+
+Costruzione guidata analoga al builder del dizionario, senza espressioni
+regolari: si osserva un campo del documento (nome file, percorso, cartella
+progetto o estensione), si sceglie il modo di confronto (contiene, inizia
+per, finisce per, uguale a, estensione tra) e si indicano uno o più valori,
+con confronto sempre senza distinzione di maiuscole e con normalizzazione
+degli accenti. Le regole sono ordinate per priorità (riordinabili con i
+comandi "Su"/"Giù"), attivabili e disattivabili: vince la prima regola
+attiva che riscontra. La pagina "Regole di tipologia" richiede la prova
+live sui nomi reali dei file dell'inventario (conteggio degli intercettati
+ed esempi) prima del salvataggio. I documenti che nessuna regola intercetta
+restano "non_classificato": un esito legittimo e misurato, non un errore.
+
+### Consolidamento
+
+Il pulsante di ricostruzione (pagina "Consolidamento") applica le regole di
+tipologia, consolida la riservatezza dal triage più recente, sovrappone le
+proposte confermate o corrette in Validazione AI e aggancia i documenti
+alle entità del tipo scelto (selezionabile in pagina, ricordato per la
+volta successiva). Il report mostra documenti nuovi, classificati per
+regola/validazione/manuale, non classificati, agganciati e orfani (cartella
+progetto senza entità corrispondente: segnale che il criterio di
+autogenerazione dell'entità va rivisto, o che la cartella è estranea al
+perimetro), oltre agli indicatori di copertura sempre consultabili in
+pagina, anche prima di una nuova esecuzione.
+
+### Esplora archivio e completezza per entità
+
+"Esplora archivio" naviga entità → tipologia → documenti (con il bucket
+"senza entità collegata" per gli orfani), con filtri liberi per entità,
+tipologia, riservatezza e stato di classificazione utilizzabili anche in
+combinazione diretta. La scheda del singolo documento consente la
+correzione manuale della tipologia, che diventa la precedenza massima.
+"Completezza per entità" mostra, per ciascuna entità, quali tipologie
+attese risultano assenti tra i documenti agganciati: la misura di quanto
+l'archivio sia pronto per la fase 2 (retrieval semantico, knowledge graph).
+
+### Export
+
+`archivio_logico.json` (formato `wikify-archivio/1.0`: entità con i propri
+attributi e i documenti agganciati, tipologia/riservatezza/origine/percorso;
+più i documenti senza entità corrispondente) è il contratto di consegna
+verso la fase 2, che leggerà questo file e non il filesystem, ereditando il
+security trimming già stabilito dal triage. `archivio_logico.xlsx` affianca
+i fogli "Documenti", "Regole di tipologia" e "Completezza per entità" per
+la consultazione.
+
+### Schema dati (migrazione V7, additiva) e scostamenti dalla specifica
+
+Tabelle nuove: `documenti` (percorso_rel univoco, cartella_progetto,
+entita_id, tipologia/tipologia_origine/tipologia_regola_id,
+riservatezza/riservatezza_origine, stato, data_aggiornamento) e
+`regole_tipologia` (nome, tipologia, criterio_json, priorita, attiva,
+data_creazione). I database esistenti vengono aggiornati all'avvio senza
+alcuna modifica alle tabelle precedenti. Scostamenti rispetto allo schema
+di progettazione, documentati anche in `core/db.py` e `core/archivio.py`:
+
+- `documenti.entita_id` e `documenti.tipologia_regola_id` non dichiarano
+  `REFERENCES`: sono collegamenti derivati, ricalcolati a ogni
+  consolidamento, non un vincolo di integrità referenziale permanente —
+  coerentemente con la natura non distruttiva della ricostruzione,
+  un'entità o una regola cancellate non devono impedire la lettura dei
+  documenti già scritti;
+- l'aggancio documento → entità richiede la scelta esplicita del tipo di
+  entità (la specifica non la rende esplicita, essendo possibili più tipi
+  di entità nel catalogo): la scelta è ricordata nelle impostazioni e
+  rieseguibile senza aggancio (nessun tipo scelto) senza toccare i
+  collegamenti già calcolati;
+- la riservatezza consolidata conserva il vocabolario della sorgente da
+  cui proviene: "Riservato"/"Condivisibile" dal triage per file (registro
+  di segregazione del modulo Scanner), "condivisibile"/"riservato"/"misto"
+  dalla Validazione AI (tassonomia per sezione, con "misto" quando sezioni
+  diverse dello stesso documento sono state validate con esiti diversi). I
+  due vocabolari non vengono unificati: unificarli avrebbe richiesto
+  ridefinire una delle due tassonomie già congelate altrove nell'app;
+  restano distinguibili dalla colonna riservatezza_origine;
+- le "tipologie attese" della completezza per entità coincidono con
+  l'intera tassonomia di `core/validazione.py`, esclusa "altro" (che è per
+  definizione un contenitore residuale): la specifica non introduce una
+  configurazione di tipologie attese per tipo di entità, quindi si è
+  scelto il riferimento deterministico più semplice e verificabile.
+
 ## Verifiche automatiche
 
 La suite di test si esegue con:
@@ -293,8 +399,8 @@ lavoro non viene toccato.
 app/
   app.py           avvio e registrazione dei moduli (blueprint)
   avvia.sh/.bat    avvio con la cartella dati locale (Mac / Windows)
-  core/            database, estrazione testo, motore di scansione, inventario, report, analisi
-  modules/         moduli funzionali: inventario, dizionario, scansione, storico, validazione
+  core/            database, estrazione testo, motore di scansione, inventario, catalogo, archivio logico, report, analisi
+  modules/         moduli funzionali: inventario, dizionario, scansione, storico, catalogo, validazione, archivio
   templates/       pagine HTML (Jinja2)
   static/          stile CSS e script della prova live
   docs_agente/     istruzioni e formato bozze per l'agente di rilevazione

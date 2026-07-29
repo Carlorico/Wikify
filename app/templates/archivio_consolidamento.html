@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block titolo %}Consolidamento, Wikify{% endblock %}
+{% block contenuto %}
+<div class="testata-pagina">
+  <h1>Archivio logico, consolidamento</h1>
+  <div class="azioni-inline">
+    <a class="bottone bottone-secondario" href="{{ url_for('archivio.esplora') }}">Esplora archivio</a>
+    <a class="bottone bottone-secondario" href="{{ url_for('archivio.export_json') }}">Export JSON</a>
+    <a class="bottone bottone-secondario" href="{{ url_for('archivio.export_xlsx') }}">Export XLSX</a>
+  </div>
+</div>
+<p class="nota-piccola">La ricostruzione è idempotente e non distruttiva: le correzioni
+manuali e le proposte validate in Validazione AI non vengono mai sovrascritte. Rieseguirla
+è sempre sicuro e produce il report sottostante.</p>
+
+<div class="scheda">
+  <form method="post">
+    <label for="tipo_entita">Tipo di entità per l'aggancio documento &rarr; entità</label>
+    <select id="tipo_entita" name="tipo_entita">
+      <option value="">Nessuno (non eseguire l'aggancio)</option>
+      {% for t in tipi %}
+      <option value="{{ t.id }}" {% if tipo_sel == t.id | string %}selected{% endif %}>{{ t.nome }}</option>
+      {% endfor %}
+    </select>
+    <p class="aiuto">Il legame si deriva confrontando la cartella progetto dell'inventario
+    con la cartella di origine delle entità del tipo scelto. Senza tipo scelto il
+    consolidamento aggiorna comunque tipologia e riservatezza, ma non tocca l'aggancio
+    esistente.</p>
+    <div style="margin-top:14px">
+      <button type="submit">Esegui consolidamento</button>
+    </div>
+  </form>
+</div>
+
+<h2>Stato corrente dell'archivio logico</h2>
+<div class="kpi-griglia">
+  <div class="kpi"><div class="numero">{{ indicatori.totale_documenti }}</div><div class="voce">Documenti censiti</div></div>
+  <div class="kpi"><div class="numero">{{ indicatori.percentuale_copertura }}%</div><div class="voce">Copertura classificazione</div></div>
+  <div class="kpi"><div class="numero {{ 'media' if indicatori.non_classificati }}">{{ indicatori.non_classificati }}</div><div class="voce">Non classificati</div></div>
+  <div class="kpi"><div class="numero">{{ indicatori.agganciati_totale }}</div><div class="voce">Agganciati a un'entità</div></div>
+</div>
+<div class="kpi-griglia">
+  <div class="kpi"><div class="numero">{{ indicatori.classificati_per_regola }}</div><div class="voce">Tipologia da regola</div></div>
+  <div class="kpi"><div class="numero">{{ indicatori.classificati_per_validazione }}</div><div class="voce">Tipologia da validazione</div></div>
+  <div class="kpi"><div class="numero">{{ indicatori.classificati_manuale }}</div><div class="voce">Tipologia manuale</div></div>
+  <div class="kpi"><div class="numero">{{ indicatori.riservatezza_da_triage }}</div><div class="voce">Riservatezza da triage</div></div>
+  <div class="kpi"><div class="numero">{{ indicatori.riservatezza_da_validazione }}</div><div class="voce">Riservatezza da validazione</div></div>
+</div>
+
+{% if report %}
+<h2>Report dell'ultimo consolidamento ({{ report.data }})</h2>
+<div class="kpi-griglia">
+  <div class="kpi"><div class="numero">{{ report.nuovi_documenti }}</div><div class="voce">Documenti nuovi</div></div>
+  <div class="kpi"><div class="numero">{{ report.agganciati }}</div><div class="voce">Agganciati in questa esecuzione</div></div>
+  <div class="kpi"><div class="numero {{ 'media' if report.n_orfani }}">{{ report.n_orfani }}</div><div class="voce">Orfani (cartella senza entità)</div></div>
+</div>
+{% if not report.aggancio_eseguito %}
+<div class="avviso avviso-attenzione">Aggancio non eseguito: scegliere un tipo di entità
+per collegare i documenti alle rispettive entità di progetto.</div>
+{% endif %}
+{% if report.validazioni_senza_documento %}
+<p class="nota-piccola">{{ report.validazioni_senza_documento }} proposte validate di
+tipologia fanno riferimento a un file non presente (o non più presente) nell'inventario:
+non hanno potuto essere consolidate.</p>
+{% endif %}
+{% if report.orfani %}
+<h3>Documenti orfani ({{ report.n_orfani }})</h3>
+<p class="nota-piccola">La cartella progetto del documento non corrisponde a nessuna
+entità attiva del tipo scelto: è il segnale che il criterio di autogenerazione
+dell'entità va rivisto, oppure che la cartella è estranea al perimetro.</p>
+<div class="tabella-scroll">
+<table>
+  <tr><th>Percorso</th></tr>
+  {% for percorso in report.orfani %}
+  <tr><td class="rompi">{{ percorso }}</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% if report.n_orfani > report.orfani | length %}
+<p class="nota-piccola">Mostrati i primi {{ report.orfani | length }} orfani su {{ report.n_orfani }}.</p>
+{% endif %}
+{% endif %}
+{% endif %}
+{% endblock %}

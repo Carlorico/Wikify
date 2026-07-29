@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block titolo %}Completezza per entità, Wikify{% endblock %}
+{% block contenuto %}
+<div class="testata-pagina">
+  <h1>Archivio logico, completezza per entità</h1>
+  <div class="azioni-inline">
+    <a class="bottone bottone-secondario" href="{{ url_for('archivio.esplora') }}">Esplora archivio</a>
+    <a class="bottone bottone-secondario" href="{{ url_for('archivio.export_xlsx') }}">Export XLSX</a>
+  </div>
+</div>
+<p class="nota-piccola">Per ciascuna entità, quali tipologie attese ({{ tipologie_attese | join(", ") }})
+risultano assenti tra i documenti agganciati: la misura di quanto l'archivio sia
+effettivamente pronto per la fase 2 (retrieval semantico, knowledge graph).</p>
+
+<form method="get" class="filtri">
+  <div>
+    <label for="f-tipo">Tipo di entità</label>
+    <select id="f-tipo" name="tipo">
+      <option value="">Tutti</option>
+      {% for t in tipi %}
+      <option value="{{ t.id }}" {% if tipo_sel == t.id | string %}selected{% endif %}>{{ t.nome }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div><button type="submit" class="bottone-secondario">Filtra</button></div>
+</form>
+
+<div class="tabella-scroll">
+<table>
+  <tr><th>Tipo</th><th>Chiave</th><th>Completezza</th><th>Tipologie presenti</th><th>Tipologie assenti</th></tr>
+  {% for r in righe %}
+  <tr>
+    <td>{{ r.entita.tipo_nome }}</td>
+    <td><strong>{{ r.entita.chiave }}</strong></td>
+    <td><span class="badge badge-{{ 'alta' if r.percentuale < 50 else ('media' if r.percentuale < 100 else 'on') }}">{{ r.percentuale }}%</span></td>
+    <td>{{ r.presenti | join(", ") or "(nessuna)" }}</td>
+    <td>{{ r.assenti | join(", ") or "(nessuna, completa)" }}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5">Nessuna entità definita: creare i tipi di entità dal Catalogo.</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

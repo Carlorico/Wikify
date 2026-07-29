@@ -346,6 +346,7 @@ class TestMigrazione(unittest.TestCase):
     TABELLE_NUOVE_V5 = ("lotti_validazione", "proposte", "validazioni",
                         "note_conoscenza_tacita")
     TABELLE_NUOVE_V6 = ("sessioni_analisi", "sessioni_analisi_letture")
+    TABELLE_NUOVE_V7 = ("documenti", "regole_tipologia")
 
     def test_migrazione_da_v1(self):
         cartella = usa_dati_temporanei()
@@ -356,17 +357,18 @@ class TestMigrazione(unittest.TestCase):
         self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 1)
         conn.close()
 
-        db.init_db()  # applica le migrazioni V2, V3, V4, V5 e V6
+        db.init_db()  # applica le migrazioni V2, V3, V4, V5, V6 e V7
 
         conn = db.get_connection()
-        self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 6)
+        self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 7)
         tabelle = {r[0] for r in conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table'")}
         self.assertIn("utenti", tabelle)
         self.assertIn("triage_file", tabelle)
         self.assertIn("triage", tabelle)  # la tabella storica resta
         for t in (self.TABELLE_NUOVE_V3 + self.TABELLE_NUOVE_V4
-                 + self.TABELLE_NUOVE_V5 + self.TABELLE_NUOVE_V6):
+                 + self.TABELLE_NUOVE_V5 + self.TABELLE_NUOVE_V6
+                 + self.TABELLE_NUOVE_V7):
             self.assertIn(t, tabelle)
         dopo = {t: conn.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0]
                 for t in ("regole", "scansioni", "segnalazioni", "triage")}
@@ -396,14 +398,15 @@ class TestMigrazione(unittest.TestCase):
         self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 2)
         conn.close()
 
-        db.init_db()  # applica le migrazioni V3, V4, V5 e V6
+        db.init_db()  # applica le migrazioni V3, V4, V5, V6 e V7
 
         conn = db.get_connection()
-        self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 6)
+        self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 7)
         tabelle = {r[0] for r in conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table'")}
         for t in (self.TABELLE_NUOVE_V3 + self.TABELLE_NUOVE_V4
-                 + self.TABELLE_NUOVE_V5 + self.TABELLE_NUOVE_V6):
+                 + self.TABELLE_NUOVE_V5 + self.TABELLE_NUOVE_V6
+                 + self.TABELLE_NUOVE_V7):
             self.assertIn(t, tabelle)
         dopo = {t: conn.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0]
                 for t in controllate}
@@ -418,7 +421,8 @@ class TestMigrazione(unittest.TestCase):
                 "SELECT file, qualifica, verificato FROM triage_file ORDER BY id")])
         # Le tabelle nuove partono vuote
         for t in (self.TABELLE_NUOVE_V3 + self.TABELLE_NUOVE_V4
-                 + self.TABELLE_NUOVE_V5 + self.TABELLE_NUOVE_V6):
+                 + self.TABELLE_NUOVE_V5 + self.TABELLE_NUOVE_V6
+                 + self.TABELLE_NUOVE_V7):
             self.assertEqual(
                 conn.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0], 0)
         conn.close()
@@ -440,13 +444,14 @@ class TestMigrazione(unittest.TestCase):
         self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 3)
         conn.close()
 
-        db.init_db()  # applica le migrazioni V4, V5 e V6
+        db.init_db()  # applica le migrazioni V4, V5, V6 e V7
 
         conn = db.get_connection()
-        self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 6)
+        self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 7)
         tabelle = {r[0] for r in conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table'")}
-        for t in self.TABELLE_NUOVE_V4 + self.TABELLE_NUOVE_V5 + self.TABELLE_NUOVE_V6:
+        for t in (self.TABELLE_NUOVE_V4 + self.TABELLE_NUOVE_V5
+                 + self.TABELLE_NUOVE_V6 + self.TABELLE_NUOVE_V7):
             self.assertIn(t, tabelle)
         dopo = {t: conn.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0]
                 for t in controllate}
@@ -456,7 +461,8 @@ class TestMigrazione(unittest.TestCase):
             [tuple(r) for r in conn.execute(
                 "SELECT percorso_rel, cartella_progetto, stato "
                 "FROM inventario_file ORDER BY id")])
-        for t in self.TABELLE_NUOVE_V4 + self.TABELLE_NUOVE_V5 + self.TABELLE_NUOVE_V6:
+        for t in (self.TABELLE_NUOVE_V4 + self.TABELLE_NUOVE_V5
+                 + self.TABELLE_NUOVE_V6 + self.TABELLE_NUOVE_V7):
             self.assertEqual(
                 conn.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0], 0)
         conn.close()
@@ -479,13 +485,13 @@ class TestMigrazione(unittest.TestCase):
         self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 4)
         conn.close()
 
-        db.init_db()  # applica le migrazioni V5 e V6
+        db.init_db()  # applica le migrazioni V5, V6 e V7
 
         conn = db.get_connection()
-        self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 6)
+        self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 7)
         tabelle = {r[0] for r in conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table'")}
-        for t in self.TABELLE_NUOVE_V5 + self.TABELLE_NUOVE_V6:
+        for t in self.TABELLE_NUOVE_V5 + self.TABELLE_NUOVE_V6 + self.TABELLE_NUOVE_V7:
             self.assertIn(t, tabelle)
         dopo = {t: conn.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0]
                 for t in controllate}
@@ -495,7 +501,7 @@ class TestMigrazione(unittest.TestCase):
             [tuple(r) for r in conn.execute(
                 "SELECT chiave, cartella_origine, stato FROM entita "
                 "ORDER BY id")])
-        for t in self.TABELLE_NUOVE_V5 + self.TABELLE_NUOVE_V6:
+        for t in self.TABELLE_NUOVE_V5 + self.TABELLE_NUOVE_V6 + self.TABELLE_NUOVE_V7:
             self.assertEqual(
                 conn.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0], 0)
         conn.close()
@@ -2385,14 +2391,16 @@ class TestMigrazioneV6(unittest.TestCase):
             "SELECT COUNT(*) FROM lotti_validazione").fetchone()[0]
         conn.close()
 
-        db.init_db()  # applica la sola migrazione V6
+        db.init_db()  # applica le migrazioni V6 e V7
 
         conn = db.get_connection()
-        self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 6)
+        self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 7)
         tabelle = {r[0] for r in conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table'")}
         self.assertIn("sessioni_analisi", tabelle)
         self.assertIn("sessioni_analisi_letture", tabelle)
+        self.assertIn("documenti", tabelle)
+        self.assertIn("regole_tipologia", tabelle)
         dopo = conn.execute(
             "SELECT COUNT(*) FROM lotti_validazione").fetchone()[0]
         self.assertEqual(prima, dopo)  # nessuna perdita di dati
@@ -2402,6 +2410,62 @@ class TestMigrazioneV6(unittest.TestCase):
         self.assertIsNone(riga["sessione_id"])
         self.assertEqual(
             conn.execute("SELECT COUNT(*) FROM sessioni_analisi"
+                        ).fetchone()[0], 0)
+        conn.close()
+
+
+class TestMigrazioneV7(unittest.TestCase):
+    """Modulo 5: retrocompatibilita' della migrazione V7 (archivio logico).
+    Un db V6 con inventario, catalogo e triage esistenti migra senza
+    perdite; le tabelle nuove (documenti, regole_tipologia) nascono vuote."""
+
+    def _prepara_db_v6(self, cartella):
+        percorso = os.path.join(cartella, "archivio_smart.db")
+        conn = sqlite3.connect(percorso)
+        for schema in db.MIGRAZIONI[:6]:
+            conn.executescript(schema)
+        conn.execute("PRAGMA user_version = 6")
+        conn.execute("INSERT INTO utenti (nome, pin, attivo, data_creazione) "
+                     "VALUES ('Carlo', 'aa$bb', 1, '01/06/2026 09:00')")
+        conn.execute("INSERT INTO impostazioni (chiave, valore) "
+                     "VALUES ('radice_archivio', '/vecchio')")
+        conn.execute("INSERT INTO inventario_file (percorso_rel, "
+                     "cartella_progetto, estensione, stato) "
+                     "VALUES ('P-001/doc.txt', 'P-001', '.txt', 'presente')")
+        conn.execute("INSERT INTO tipi_entita (nome, criterio_json, "
+                     "data_creazione, stato) VALUES ('Progetto', '{}', "
+                     "'01/06/2026 09:00', 'attivo')")
+        conn.execute("INSERT INTO entita (tipo_id, chiave, cartella_origine, "
+                     "stato) VALUES (1, 'P-001', 'P-001', 'attiva')")
+        conn.commit()
+        conn.close()
+
+    def test_01_migrazione_da_v6_con_dati_reali(self):
+        cartella = usa_dati_temporanei()
+        self._prepara_db_v6(cartella)
+        conn = db.get_connection()
+        self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 6)
+        controllate = ("utenti", "impostazioni", "inventario_file",
+                       "tipi_entita", "entita")
+        prima = {t: conn.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0]
+                 for t in controllate}
+        conn.close()
+
+        db.init_db()  # applica la sola migrazione V7
+
+        conn = db.get_connection()
+        self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 7)
+        tabelle = {r[0] for r in conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'")}
+        self.assertIn("documenti", tabelle)
+        self.assertIn("regole_tipologia", tabelle)
+        dopo = {t: conn.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0]
+                for t in controllate}
+        self.assertEqual(prima, dopo)  # nessuna perdita di dati
+        self.assertEqual(
+            conn.execute("SELECT COUNT(*) FROM documenti").fetchone()[0], 0)
+        self.assertEqual(
+            conn.execute("SELECT COUNT(*) FROM regole_tipologia"
                         ).fetchone()[0], 0)
         conn.close()
 
@@ -3115,6 +3179,421 @@ class TestManutenzioneReset(unittest.TestCase):
         cartella = db.DATA_DIR / "import_temp"
         self.assertTrue(cartella.is_dir())
         self.assertEqual(list(cartella.iterdir()), [])
+
+
+class TestArchivioRegoleTipologia(unittest.TestCase):
+    """Modulo 5: regole di tipologia, builder guidato senza espressioni
+    regolari, prova live sui nomi reali, priorità, attiva/disattiva,
+    eliminazione, normalizzazione di maiuscole e accenti."""
+
+    @classmethod
+    def setUpClass(cls):
+        usa_dati_temporanei()
+        from app import create_app
+        cls.app = create_app()
+        cls.app.config["TESTING"] = True
+        cls.client = cls.app.test_client()
+        cls.client.post("/utenti/benvenuto/crea",
+                        data={"nome": "Carlo Verdini", "pin": "1234"})
+        cls.radice = os.path.join(tempfile.mkdtemp(prefix="arch_reg_"),
+                                  "archivio")
+        os.makedirs(cls.radice)
+        crea_cartella_progetto(cls.radice, "P-001 Impianto Alfa",
+                               "manuale_installazione_TX100.docx")
+        crea_cartella_progetto(cls.radice, "P-001 Impianto Alfa",
+                               "specifica_tecnica.pdf")
+        cls.client.post("/inventario/imposta-radice", data={"radice": cls.radice})
+        cls.client.post("/inventario/iniziale")
+
+    def _dati_regola(self, azione, nome="Manuali di installazione",
+                     tipologia="manuale_installazione", campo="nome_file",
+                     modo="contiene", valori="manuale_installazione"):
+        return {"nome": nome, "tipologia": tipologia, "campo": campo,
+                "modo": modo, "valori": valori, "azione": azione}
+
+    def test_01_normalizzazione_maiuscole_e_accenti(self):
+        from core import archivio as arc
+        self.assertEqual(arc.normalizza_testo("Perché"), "perche")
+        self.assertEqual(arc.normalizza_testo("MANUALE"), "manuale")
+        criterio = {"campo": "nome_file", "modo": "contiene",
+                   "valori": ["perché"]}
+        doc = {"nome_file": "PERCHE_relazione.docx", "percorso": "",
+              "cartella_progetto": "", "estensione": ".docx"}
+        self.assertTrue(arc.valuta_criterio(criterio, doc))
+
+    def test_02_prova_live_prima_del_salvataggio(self):
+        r = self.client.get("/archivio/regole/nuova")
+        self.assertEqual(r.status_code, 200)
+        self.assertNotIn('value="salva"', r.get_data(as_text=True))
+        r = self.client.post("/archivio/regole/nuova",
+                             data=self._dati_regola("prova"))
+        self.assertEqual(r.status_code, 200)
+        testo = r.get_data(as_text=True)
+        self.assertIn("1 documenti intercettati", testo)
+        self.assertIn("manuale_installazione_TX100.docx", testo)
+        self.assertIn('value="salva"', testo)
+        conn = db.get_connection()
+        self.assertEqual(conn.execute(
+            "SELECT COUNT(*) FROM regole_tipologia").fetchone()[0], 0)
+        conn.close()
+
+    def test_03_salvataggio_e_priorita_di_creazione(self):
+        r = self.client.post("/archivio/regole/nuova",
+                             data=self._dati_regola("salva"),
+                             follow_redirects=True)
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("Regola di tipologia salvata", r.get_data(as_text=True))
+        r = self.client.post("/archivio/regole/nuova", data=self._dati_regola(
+            "salva", nome="Specifiche tecniche", tipologia="specifica_tecnica",
+            campo="estensione", modo="estensione_tra", valori="pdf"),
+            follow_redirects=True)
+        self.assertEqual(r.status_code, 200)
+        conn = db.get_connection()
+        regole = conn.execute(
+            "SELECT nome, priorita FROM regole_tipologia ORDER BY priorita"
+        ).fetchall()
+        conn.close()
+        self.assertEqual([r["nome"] for r in regole],
+                         ["Manuali di installazione", "Specifiche tecniche"])
+        self.assertLess(regole[0]["priorita"], regole[1]["priorita"])
+
+    def test_04_riordino_priorita(self):
+        conn = db.get_connection()
+        prima = conn.execute(
+            "SELECT id, nome FROM regole_tipologia ORDER BY priorita"
+        ).fetchall()
+        conn.close()
+        prima_id = prima[0]["id"]
+        r = self.client.post("/archivio/regole/%d/sposta" % prima_id,
+                             data={"direzione": "giu"}, follow_redirects=True)
+        self.assertEqual(r.status_code, 200)
+        conn = db.get_connection()
+        dopo = conn.execute(
+            "SELECT id, nome FROM regole_tipologia ORDER BY priorita"
+        ).fetchall()
+        conn.close()
+        self.assertEqual(dopo[0]["id"], prima[1]["id"])
+        self.assertEqual(dopo[1]["id"], prima[0]["id"])
+        # Spostare oltre il limite non genera errori ne' cambia l'ordine
+        r = self.client.post("/archivio/regole/%d/sposta" % dopo[1]["id"],
+                             data={"direzione": "giu"}, follow_redirects=True)
+        self.assertEqual(r.status_code, 200)
+
+    def test_05_attiva_disattiva_ed_elimina(self):
+        conn = db.get_connection()
+        riga = conn.execute(
+            "SELECT id, attiva FROM regole_tipologia ORDER BY id LIMIT 1"
+        ).fetchone()
+        conn.close()
+        rid, stato_iniziale = riga["id"], riga["attiva"]
+        self.client.post("/archivio/regole/%d/toggle" % rid)
+        conn = db.get_connection()
+        stato_dopo = conn.execute(
+            "SELECT attiva FROM regole_tipologia WHERE id = ?",
+            (rid,)).fetchone()["attiva"]
+        conn.close()
+        self.assertNotEqual(stato_iniziale, stato_dopo)
+        r = self.client.post("/archivio/regole/%d/elimina" % rid,
+                             follow_redirects=True)
+        self.assertEqual(r.status_code, 200)
+        conn = db.get_connection()
+        self.assertIsNone(conn.execute(
+            "SELECT id FROM regole_tipologia WHERE id = ?", (rid,)).fetchone())
+        conn.close()
+
+    def test_06_criterio_senza_valori_rifiutato(self):
+        r = self.client.post("/archivio/regole/nuova", data=self._dati_regola(
+            "prova", valori="   \n  "), follow_redirects=True)
+        self.assertIn("Indicare almeno un valore", r.get_data(as_text=True))
+
+    def test_07_estensione_tra_forza_il_campo_estensione(self):
+        from core import archivio as arc
+        criterio, errore = arc.criterio_da_form(
+            {"campo": "nome_file", "modo": "estensione_tra", "valori": "pdf\ndocx"})
+        self.assertIsNone(errore)
+        self.assertEqual(criterio["campo"], "estensione")
+        self.assertEqual(criterio["valori"], [".pdf", ".docx"])
+
+
+class TestArchivioConsolidamento(unittest.TestCase):
+    """Modulo 5: ricostruzione idempotente, le tre precedenze (manuale >
+    validazione > regola/triage), aggancio a entità e orfani, riservatezza
+    dal triage più recente, copertura, completezza per entità, export."""
+
+    CARTELLA_ALFA = "P-001 Impianto Alfa"
+    CARTELLA_BETA = "P-002 Impianto Beta"
+    CARTELLA_ESTRANEA = "Documenti generali"
+
+    @classmethod
+    def setUpClass(cls):
+        usa_dati_temporanei()
+        from app import create_app
+        cls.app = create_app()
+        cls.app.config["TESTING"] = True
+        cls.client = cls.app.test_client()
+        cls.client.post("/utenti/benvenuto/crea",
+                        data={"nome": "Carlo Verdini", "pin": "1234"})
+        cls.radice = os.path.join(tempfile.mkdtemp(prefix="arch_cons_"),
+                                  "archivio")
+        os.makedirs(cls.radice)
+        crea_cartella_progetto(cls.radice, cls.CARTELLA_ALFA,
+                               "manuale_installazione_TX100.docx")
+        crea_cartella_progetto(cls.radice, cls.CARTELLA_ALFA,
+                               "specifica_tecnica.pdf")
+        crea_cartella_progetto(cls.radice, cls.CARTELLA_ALFA, "foto.jpg")
+        crea_cartella_progetto(cls.radice, cls.CARTELLA_BETA, "config.txt")
+        crea_cartella_progetto(cls.radice, cls.CARTELLA_ESTRANEA, "varie.txt")
+        cls.client.post("/inventario/imposta-radice", data={"radice": cls.radice})
+        cls.client.post("/inventario/iniziale")
+
+        # Tipo di entità "Progetto" (prefisso P- 3 cifre): aggancia le due
+        # cartelle P-001/P-002, "Documenti generali" resta senza entità.
+        cls.client.post("/catalogo/tipi/nuovo", data={
+            "nome": "Progetto", "modo": "prefisso", "prefisso": "P-",
+            "blocco1_tipo": "cifre", "blocco1_n": "3", "separatore": "",
+            "blocco2_tipo": "cifre", "blocco2_n": "0",
+            "escluse_json": "[]", "azione": "salva"})
+        conn = db.get_connection()
+        cls.tipo_id = conn.execute(
+            "SELECT id FROM tipi_entita WHERE nome = 'Progetto'").fetchone()["id"]
+        conn.close()
+
+        # Regole di tipologia: manuali di installazione, poi PDF come
+        # specifica tecnica. "foto.jpg" e "config.txt" restano senza
+        # riscontro (non_classificato), esito legittimo e misurato.
+        from core import archivio as arc
+        conn = db.get_connection()
+        arc.crea_regola(conn, "Manuali di installazione",
+                        "manuale_installazione",
+                        {"campo": "nome_file", "modo": "contiene",
+                         "valori": ["manuale_installazione"]})
+        arc.crea_regola(conn, "Specifiche tecniche", "specifica_tecnica",
+                        {"campo": "estensione", "modo": "estensione_tra",
+                         "valori": [".pdf"]})
+        conn.close()
+
+    def _percorso(self, cartella, file_):
+        return "%s/%s" % (cartella, file_)
+
+    def _doc(self, conn, percorso):
+        return conn.execute(
+            "SELECT * FROM documenti WHERE percorso_rel = ?",
+            (percorso,)).fetchone()
+
+    def test_01_prima_ricostruzione_classifica_per_regola(self):
+        from core import archivio as arc
+        conn = db.get_connection()
+        report = arc.ricostruisci(conn, self.tipo_id)
+        self.assertGreaterEqual(report["nuovi_documenti"], 5)
+        self.assertTrue(report["aggancio_eseguito"])
+
+        manuale = self._doc(conn, self._percorso(
+            self.CARTELLA_ALFA, "manuale_installazione_TX100.docx"))
+        self.assertEqual(manuale["tipologia"], "manuale_installazione")
+        self.assertEqual(manuale["tipologia_origine"], "regola")
+
+        pdf = self._doc(conn, self._percorso(
+            self.CARTELLA_ALFA, "specifica_tecnica.pdf"))
+        self.assertEqual(pdf["tipologia"], "specifica_tecnica")
+
+        foto = self._doc(conn, self._percorso(self.CARTELLA_ALFA, "foto.jpg"))
+        self.assertEqual(foto["tipologia"], arc.TIPOLOGIA_NON_CLASSIFICATO)
+        conn.close()
+
+    def test_02_aggancio_a_entita_e_orfani(self):
+        conn = db.get_connection()
+        manuale = self._doc(conn, self._percorso(
+            self.CARTELLA_ALFA, "manuale_installazione_TX100.docx"))
+        self.assertIsNotNone(manuale["entita_id"])
+        entita_alfa = conn.execute(
+            "SELECT chiave FROM entita WHERE id = ?",
+            (manuale["entita_id"],)).fetchone()
+        self.assertEqual(entita_alfa["chiave"], "P-001")
+
+        estranea = self._doc(conn, self._percorso(
+            self.CARTELLA_ESTRANEA, "varie.txt"))
+        self.assertIsNone(estranea["entita_id"])
+        conn.close()
+
+        from core import archivio as arc
+        conn = db.get_connection()
+        report = arc.ricostruisci(conn, self.tipo_id)
+        conn.close()
+        self.assertIn(self._percorso(self.CARTELLA_ESTRANEA, "varie.txt"),
+                     report["orfani"])
+        self.assertGreaterEqual(report["n_orfani"], 1)
+
+    def test_03_ricostruzione_idempotente(self):
+        from core import archivio as arc
+        conn = db.get_connection()
+        arc.ricostruisci(conn, self.tipo_id)
+        prima = {r["percorso_rel"]: (r["tipologia"], r["tipologia_origine"],
+                                     r["entita_id"], r["riservatezza"])
+                 for r in conn.execute("SELECT * FROM documenti")}
+        n_prima = conn.execute("SELECT COUNT(*) FROM documenti").fetchone()[0]
+        report = arc.ricostruisci(conn, self.tipo_id)
+        dopo = {r["percorso_rel"]: (r["tipologia"], r["tipologia_origine"],
+                                    r["entita_id"], r["riservatezza"])
+                for r in conn.execute("SELECT * FROM documenti")}
+        n_dopo = conn.execute("SELECT COUNT(*) FROM documenti").fetchone()[0]
+        conn.close()
+        self.assertEqual(report["nuovi_documenti"], 0)
+        self.assertEqual(n_prima, n_dopo)
+        self.assertEqual(prima, dopo)
+
+    def test_04_precedenza_manuale_non_sovrascritta(self):
+        from core import archivio as arc
+        conn = db.get_connection()
+        doc = self._doc(conn, self._percorso(self.CARTELLA_ALFA, "foto.jpg"))
+        arc.correggi_tipologia_manuale(conn, doc["id"], "corrispondenza")
+        conn.close()
+
+        conn = db.get_connection()
+        arc.ricostruisci(conn, self.tipo_id)
+        doc = self._doc(conn, self._percorso(self.CARTELLA_ALFA, "foto.jpg"))
+        conn.close()
+        self.assertEqual(doc["tipologia"], "corrispondenza")
+        self.assertEqual(doc["tipologia_origine"], "manuale")
+
+        # ...anche passando dalla vista, con lo stesso esito
+        r = self.client.get("/archivio/documenti/%d" % doc["id"])
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("corrispondenza", r.get_data(as_text=True))
+
+    def test_05_precedenza_validazione_non_sovrascritta_da_regola(self):
+        """Una proposta di tipologia confermata in Validazione AI prevale
+        sulla regola, anche se la regola classificherebbe diversamente, e
+        resta stabile alle ricostruzioni successive."""
+        from core import archivio as arc
+        conn = db.get_connection()
+        cur = conn.execute(
+            "INSERT INTO lotti_validazione (data_import, nome_file_origine, "
+            "formato, cartella_progetto, n_accettate, n_scartate, stato) "
+            "VALUES ('01/06/2026 09:00', 'bozza.json', 'wikify-bozza/1.0', "
+            "?, 1, 0, 'importato')", (self.CARTELLA_ALFA,))
+        lotto_id = cur.lastrowid
+        cur = conn.execute(
+            "INSERT INTO proposte (lotto_id, cartella_progetto, file, "
+            "sezione, campo, valore_proposto, confidenza, "
+            "evidenza_posizione, evidenza_citazione) VALUES (?, ?, "
+            "'specifica_tecnica.pdf', 'intero documento', 'tipologia', "
+            "'corrispondenza', 0.9, 'corpo, par. 1', 'testo di prova')",
+            (lotto_id, self.CARTELLA_ALFA))
+        proposta_id = cur.lastrowid
+        conn.execute(
+            "INSERT INTO validazioni (proposta_id, esito, valore_corretto, "
+            "validatore, data) VALUES (?, 'confermata', '', "
+            "'Carlo Verdini', '02/06/2026 10:00')", (proposta_id,))
+        conn.commit()
+
+        report = arc.ricostruisci(conn, self.tipo_id)
+        pdf = self._doc(conn, self._percorso(
+            self.CARTELLA_ALFA, "specifica_tecnica.pdf"))
+        self.assertEqual(pdf["tipologia"], "corrispondenza")
+        self.assertEqual(pdf["tipologia_origine"], "validazione")
+
+        # Rieseguendo il consolidamento la regola (che classificherebbe
+        # "specifica_tecnica") non prevale mai sulla validazione.
+        arc.ricostruisci(conn, self.tipo_id)
+        pdf = self._doc(conn, self._percorso(
+            self.CARTELLA_ALFA, "specifica_tecnica.pdf"))
+        conn.close()
+        self.assertEqual(pdf["tipologia"], "corrispondenza")
+        self.assertEqual(pdf["tipologia_origine"], "validazione")
+        self.assertEqual(report["classificati_per_validazione"], 1)
+
+    def test_06_riservatezza_dal_triage_piu_recente(self):
+        from core import archivio as arc
+        conn = db.get_connection()
+        cur = conn.execute(
+            "INSERT INTO scansioni (data, radice, stato) VALUES "
+            "('01/06/2026 09:00', ?, 'completata')", (self.radice,))
+        sid1 = cur.lastrowid
+        conn.execute(
+            "INSERT INTO triage_file (scansione_id, file, qualifica, "
+            "validatore, data) VALUES (?, ?, 'Riservato', 'Carlo Verdini', "
+            "'01/06/2026 09:30')",
+            (sid1, self._percorso(self.CARTELLA_BETA, "config.txt")))
+        cur = conn.execute(
+            "INSERT INTO scansioni (data, radice, stato) VALUES "
+            "('05/06/2026 09:00', ?, 'completata')", (self.radice,))
+        sid2 = cur.lastrowid
+        conn.execute(
+            "INSERT INTO triage_file (scansione_id, file, qualifica, "
+            "validatore, data) VALUES (?, ?, 'Condivisibile', "
+            "'Carlo Verdini', '05/06/2026 09:30')",
+            (sid2, self._percorso(self.CARTELLA_BETA, "config.txt")))
+        conn.commit()
+        db.set_impostazione(conn, "radice_archivio", self.radice)
+
+        arc.ricostruisci(conn, self.tipo_id)
+        config = self._doc(conn, self._percorso(self.CARTELLA_BETA, "config.txt"))
+        conn.close()
+        self.assertEqual(config["riservatezza"], "Condivisibile")
+        self.assertEqual(config["riservatezza_origine"], "triage")
+
+    def test_07_copertura_e_completezza(self):
+        from core import archivio as arc
+        conn = db.get_connection()
+        indicatori = arc.indicatori_copertura(conn)
+        self.assertEqual(
+            indicatori["totale_documenti"],
+            conn.execute("SELECT COUNT(*) FROM documenti").fetchone()[0])
+        self.assertGreater(indicatori["classificati_per_regola"]
+                           + indicatori["classificati_per_validazione"], 0)
+        # config.txt non e' intercettato da alcuna regola: resta non
+        # classificato (esito legittimo e misurato, non un errore).
+        self.assertGreaterEqual(indicatori["non_classificati"], 1)
+
+        completezza = arc.completezza_entita(conn, self.tipo_id)
+        conn.close()
+        chiavi = {r["entita"]["chiave"]: r for r in completezza}
+        self.assertIn("P-001", chiavi)
+        self.assertIn("manuale_installazione", chiavi["P-001"]["presenti"])
+        self.assertNotIn("manuale_installazione", chiavi["P-001"]["assenti"])
+        self.assertIn("parametri_interconnessione", chiavi["P-001"]["assenti"])
+        self.assertEqual(set(chiavi["P-001"]["presenti"])
+                         | set(chiavi["P-001"]["assenti"]),
+                         set(arc.TIPOLOGIE_ATTESE))
+
+    def test_08_export_json(self):
+        r = self.client.get("/archivio/export/archivio_logico.json")
+        self.assertEqual(r.status_code, 200)
+        dati = json.loads(r.get_data(as_text=True))
+        self.assertEqual(dati["formato"], "wikify-archivio/1.0")
+        entita = {e["chiave"]: e for e in dati["entita"]}
+        self.assertIn("P-001", entita)
+        percorsi = {d["percorso"] for d in entita["P-001"]["documenti"]}
+        self.assertIn(self._percorso(
+            self.CARTELLA_ALFA, "manuale_installazione_TX100.docx"), percorsi)
+        percorsi_orfani = {d["percorso"]
+                          for d in dati["documenti_senza_entita"]}
+        self.assertIn(self._percorso(self.CARTELLA_ESTRANEA, "varie.txt"),
+                     percorsi_orfani)
+
+    def test_09_export_xlsx(self):
+        r = self.client.get("/archivio/export/archivio_logico.xlsx")
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.get_data()[:2] == b"PK")
+        self.assertIn("archivio_logico.xlsx",
+                     r.headers["Content-Disposition"])
+
+    def test_10_pagine_raggiungibili_e_protette(self):
+        conn = db.get_connection()
+        did = conn.execute("SELECT id FROM documenti LIMIT 1").fetchone()["id"]
+        conn.close()
+        pagine = ("/archivio/", "/archivio/regole/nuova",
+                  "/archivio/consolidamento", "/archivio/esplora",
+                  "/archivio/completezza", "/archivio/documenti/%d" % did)
+        for pagina in pagine:
+            r = self.client.get(pagina)
+            self.assertEqual(r.status_code, 200, "pagina %s" % pagina)
+        self.client.get("/utenti/uscita")
+        for pagina in pagine:
+            r = self.client.get(pagina, follow_redirects=False)
+            self.assertEqual(r.status_code, 302, "pagina %s" % pagina)
+            self.assertIn("/utenti/accesso", r.headers["Location"])
+        self.client.post("/utenti/accesso", data={"utente": "1", "pin": "1234"})
 
 
 if __name__ == "__main__":

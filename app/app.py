@@ -22,6 +22,7 @@ from flask import Flask, redirect, render_template, url_for  # noqa: E402
 
 from core import db  # noqa: E402
 from core import inventario as inv  # noqa: E402
+from modules.archivio import bp as archivio_bp  # noqa: E402
 from modules.catalogo import bp as catalogo_bp  # noqa: E402
 from modules.dizionario import bp as dizionario_bp  # noqa: E402
 from modules.inventario import bp as inventario_bp  # noqa: E402
@@ -38,6 +39,7 @@ def create_app():
     # Chiave di sessione persistente, generata al primo avvio in data/.
     app.secret_key = db.get_secret_key()
 
+    app.register_blueprint(archivio_bp, url_prefix="/archivio")
     app.register_blueprint(catalogo_bp, url_prefix="/catalogo")
     app.register_blueprint(dizionario_bp, url_prefix="/dizionario")
     app.register_blueprint(inventario_bp, url_prefix="/inventario")

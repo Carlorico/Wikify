@@ -186,6 +186,62 @@ Tabella `sessioni_analisi` (ambito, n. progetti, modelli dichiarati, date, stato
 
 ---
 
+## Modulo 5 — Archivio logico (chiusura della fase 1, 29/07/2026)
+
+### Scopo
+Chiudere la prima versione di Wikify consegnando ciò che la fase 2 (retrieval semantico, knowledge graph, LLM-Wiki) presuppone e che oggi manca: **un archivio logico e organizzato**. I moduli esistenti hanno prodotto i materiali grezzi — la mappa dei file, la qualifica di riservatezza, le entità con i loro attributi, le proposte validate — ma il **documento non è ancora un oggetto di prima classe del catalogo**: non ha una tipologia stabile, non è legato esplicitamente all'entità, e la sua riservatezza vive dentro la singola scansione anziché come proprietà consolidata.
+
+Il modulo colma questo scarto senza introdurre alcuna componente AI: è consolidamento deterministico di informazioni già presenti, più una vista di navigazione e un export. La fase 2, quando arriverà, partirà da qui e non dal filesystem.
+
+### Principio di consolidamento
+Ogni documento riceve una tipologia e un livello di riservatezza da tre sorgenti, con precedenza esplicita e tracciata:
+
+| Precedenza | Origine | Motivazione |
+|---|---|---|
+| 1 (massima) | `manuale` — correzione dell'operatore nella scheda documento | La decisione umana diretta non viene mai sovrascritta da una rielaborazione |
+| 2 | `validazione` — proposta dell'agente confermata o corretta in Validazione AI | È stata comunque vagliata da un umano |
+| 3 | `regola` (tipologia) / `triage` (riservatezza) | Derivazione automatica, sostituibile a ogni ricostruzione |
+
+La ricostruzione è **idempotente e non distruttiva**: rieseguirla non altera le assegnazioni di precedenza superiore e produce sempre un report di ciò che ha cambiato.
+
+### Regole di tipologia
+Classificazione deterministica sul **nome del file, sul percorso e sull'estensione** — nessuna lettura del contenuto, nessun costo di elaborazione. Costruzione guidata analoga al builder del dizionario dei pattern, senza espressioni regolari:
+
+- campo osservato: `nome_file`, `percorso`, `cartella_progetto`, `estensione`;
+- modo: `contiene`, `inizia_per`, `finisce_per`, `uguale_a`, `estensione_tra`;
+- valori: uno o più termini, confronto senza distinzione di maiuscole e con normalizzazione degli accenti;
+- tipologia assegnata: valore della tassonomia `tipologia` già congelata in `core/validazione.py` (`specifica_tecnica`, `manuale_installazione`, `manuale_manutenzione`, `parametri_interconnessione`, `dati_sperimentazione`, `configurazione`, `disegno_schema`, `corrispondenza`, `altro`);
+- **priorità**: le regole sono ordinate; vince la prima che riscontra. Regole riordinabili e disattivabili;
+- **prova live** sui nomi reali dei file dell'inventario prima di confermare la regola, con conteggio dei documenti intercettati ed esempi.
+
+I documenti che nessuna regola intercetta restano `non_classificato`: è un esito legittimo e misurato, non un errore da nascondere.
+
+### Aggancio documento → entità
+Il legame si deriva dalla `cartella_progetto` dell'inventario confrontata con `entita.cartella_origine` del tipo di entità scelto. I documenti la cui cartella non corrisponde ad alcuna entità restano **orfani** e vengono elencati: sono il segnale che il criterio di autogenerazione dell'entità va rivisto, oppure che la cartella è estranea al perimetro.
+
+### Schema tabelle (migrazione V7, additiva)
+```
+documenti(id, percorso_rel UNIQUE, cartella_progetto, entita_id,
+          tipologia, tipologia_origine, tipologia_regola_id,
+          riservatezza, riservatezza_origine,
+          stato, data_aggiornamento)
+regole_tipologia(id, nome, tipologia, criterio_json, priorita,
+                 attiva, data_creazione)
+```
+
+### Viste UI
+Nuova sezione di menu **"Archivio logico"**, dopo Catalogo:
+1. **Regole di tipologia**: elenco ordinato per priorità con creazione guidata e prova live, riordino, attivazione/disattivazione.
+2. **Consolidamento**: pulsante di ricostruzione con report dettagliato (classificati per regola, da validazione, manuali conservati, non classificati, agganciati, orfani, riservatezza consolidata dal triage) e indicatori di copertura.
+3. **Esplora archivio**: navigazione entità → tipologia → documenti, con badge di riservatezza, filtri (entità, tipologia, riservatezza, stato di classificazione) e correzione manuale della tipologia sulla scheda del singolo documento.
+4. **Completezza per entità**: quali tipologie attese risultano assenti per ciascuna entità — la misura di quanto l'archivio sia effettivamente pronto per la fase 2.
+5. **Export**: `archivio_logico.json` (formato `wikify-archivio/1.0`: entità, attributi, documenti con tipologia, riservatezza, origine e percorso) e `archivio_logico.xlsx` per la consultazione.
+
+### Note di progetto
+- L'export JSON è il **contratto di consegna verso la fase 2**: l'indicizzazione semantica e il knowledge graph leggeranno quello, non il filesystem, ereditando così il security trimming già stabilito dal triage.
+- La copertura di classificazione e la completezza per entità sono gli indicatori con cui decidere se l'archivio è maturo per la fase 2 o se serve un altro giro di regole.
+- Nessuna chiamata a modelli: il modulo è interamente deterministico e riproducibile.
+
 ## Roadmap di integrazione
 
 | Ordine | Modulo | Dipende da | Motivo dell'ordine |

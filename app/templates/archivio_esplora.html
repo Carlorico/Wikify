@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block titolo %}Esplora archivio, Wikify{% endblock %}
+{% block contenuto %}
+<div class="testata-pagina">
+  <h1>Archivio logico, esplora archivio</h1>
+  <div class="azioni-inline">
+    <a class="bottone bottone-secondario" href="{{ url_for('archivio.completezza') }}">Completezza per entità</a>
+    <a class="bottone bottone-secondario" href="{{ url_for('archivio.consolidamento') }}">Consolidamento</a>
+  </div>
+</div>
+<p class="nota-piccola">Navigazione entità &rarr; tipologia &rarr; documenti: si parte
+dall'elenco delle entità, si sceglie la tipologia e si arriva ai documenti. I filtri sono
+comunque utilizzabili direttamente, in qualunque combinazione.</p>
+
+<form method="get" class="filtri scheda">
+  <div>
+    <label for="f-entita">Entità</label>
+    <select id="f-entita" name="entita">
+      <option value="">Tutte</option>
+      <option value="senza" {% if entita_arg == "senza" %}selected{% endif %}>Senza entità collegata ({{ n_senza }})</option>
+      {% for e in righe_entita %}
+      <option value="{{ e.id }}" {% if entita_arg == e.id | string %}selected{% endif %}>{{ e.tipo_nome }} / {{ e.chiave }} ({{ e.n_documenti }})</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="f-tipologia">Tipologia</label>
+    <select id="f-tipologia" name="tipologia">
+      <option value="">Tutte</option>
+      {% for t in tipologie %}
+      <option value="{{ t }}" {% if tipologia == t %}selected{% endif %}>{{ t }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="f-riservatezza">Riservatezza <span class="facolt">(valore esatto)</span></label>
+    <input type="text" id="f-riservatezza" name="riservatezza" value="{{ riservatezza }}"
+           placeholder="es. Riservato, condivisibile, misto">
+  </div>
+  <div>
+    <label for="f-stato">Stato di classificazione</label>
+    <select id="f-stato" name="stato">
+      <option value="">Tutti</option>
+      <option value="classificato" {% if stato == "classificato" %}selected{% endif %}>Classificati</option>
+      <option value="non_classificato" {% if stato == "non_classificato" %}selected{% endif %}>Non classificati</option>
+    </select>
+  </div>
+  <div>
+    <button type="submit" name="cerca" value="1">Vedi documenti</button>
+    <a class="bottone bottone-secondario" href="{{ url_for('archivio.esplora') }}">Azzera</a>
+  </div>
+</form>
+
+{% if documenti is not none %}
+<h2>Documenti ({{ documenti | length }})</h2>
+<div class="tabella-scroll">
+<table>
+  <tr><th>Percorso</th><th>Cartella progetto</th><th>Entità</th><th>Tipologia</th>
+      <th>Origine</th><th>Riservatezza</th><th></th></tr>
+  {% for d in documenti %}
+  <tr>
+    <td class="rompi">{{ d.percorso_rel }}</td>
+    <td class="rompi">{{ d.cartella_progetto }}</td>
+    <td>{% if d.entita_chiave %}{{ d.entita_tipo_nome }} / {{ d.entita_chiave }}{% else %}<span class="nota-piccola">(nessuna)</span>{% endif %}</td>
+    <td>{{ d.tipologia }}</td>
+    <td><span class="badge badge-{{ d.tipologia_origine }}">{{ d.tipologia_origine }}</span></td>
+    <td>
+      {% if d.riservatezza %}<span class="badge badge-{{ d.riservatezza }}">{{ d.riservatezza }}</span>
+      {% else %}<span class="nota-piccola">non qualificata</span>{% endif %}
+    </td>
+    <td><a class="bottone bottone-secondario bottone-piccolo" href="{{ url_for('archivio.documento_scheda', did=d.id) }}">Scheda</a></td>
+  </tr>
+  {% else %}
+  <tr><td colspan="7">Nessun documento corrispondente ai filtri.</td></tr>
+  {% endfor %}
+</table>
+</div>
+
+{% elif tipologie_riepilogo is not none %}
+<h2>Tipologie {% if entita_arg == "senza" %}(documenti senza entità collegata){% else %}dell'entità selezionata{% endif %}</h2>
+<div class="tabella-scroll">
+<table>
+  <tr><th>Tipologia</th><th>Documenti</th><th></th></tr>
+  {% for r in tipologie_riepilogo %}
+  <tr>
+    <td>{{ r.tipologia }}</td>
+    <td>{{ r.n }}</td>
+    <td><a class="bottone bottone-secondario bottone-piccolo"
+           href="{{ url_for('archivio.esplora', entita=entita_arg, tipologia=r.tipologia, cerca=1) }}">Vedi documenti</a></td>
+  </tr>
+  {% else %}
+  <tr><td colspan="3">Nessun documento agganciato.</td></tr>
+  {% endfor %}
+</table>
+</div>
+
+{% else %}
+<h2>Entità</h2>
+<div class="tabella-scroll">
+<table>
+  <tr><th>Tipo</th><th>Chiave</th><th>Stato</th><th>Documenti agganciati</th><th></th></tr>
+  {% for e in righe_entita %}
+  <tr>
+    <td>{{ e.tipo_nome }}</td>
+    <td><strong>{{ e.chiave }}</strong></td>
+    <td>
+      {% if e.stato == 'attiva' %}<span class="badge badge-on">attiva</span>
+      {% else %}<span class="badge badge-media">senza riscontro</span>{% endif %}
+    </td>
+    <td>{{ e.n_documenti }}</td>
+    <td><a class="bottone bottone-secondario bottone-piccolo"
+           href="{{ url_for('archivio.esplora', entita=e.id) }}">Tipologie</a></td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5">Nessuna entità definita: creare i tipi di entità dal Catalogo.</td></tr>
+  {% endfor %}
+  <tr>
+    <td colspan="3">Documenti senza entità collegata</td>
+    <td>{{ n_senza }}</td>
+    <td><a class="bottone bottone-secondario bottone-piccolo"
+           href="{{ url_for('archivio.esplora', entita='senza') }}">Tipologie</a></td>
+  </tr>
+</table>
+</div>
+{% endif %}
+{% endblock %}
