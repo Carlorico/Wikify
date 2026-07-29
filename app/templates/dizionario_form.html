@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% block titolo %}{% if regola %}Modifica regola{% else %}Nuova regola{% endif %}{% endblock %}
+{% block contenuto %}
+<h1>{% if regola %}Modifica regola {{ regola.codice }}{% else %}Nuova regola{% endif %}</h1>
+<p class="nota-piccola">Non serve conoscere le espressioni regolari: scegliere il tipo di regola, compilare i campi e verificare il risultato nella prova live prima di salvare.</p>
+
+<form method="post" class="scheda">
+  <div class="riga-campi">
+    <div>
+      <label for="codice">Codice della regola</label>
+      <input type="text" id="codice" name="codice" required
+             value="{{ (form.get('codice') if form else (regola.codice if regola else '')) or '' }}"
+             placeholder="es. CRED-04">
+      <p class="aiuto">Identificativo univoco, comparirà nei report (es. CRED-04, CLI-03).</p>
+    </div>
+    <div>
+      <label for="severita">Severità</label>
+      {% set sev_sel = (form.get('severita') if form else (regola.severita if regola else 'media')) or 'media' %}
+      <select id="severita" name="severita">
+        {% for s in severita %}
+        <option value="{{ s }}" {% if s == sev_sel %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+      <p class="aiuto">alta = quasi certamente riservato, media = da valutare in triage, bassa = indizio debole.</p>
+    </div>
+  </div>
+
+  <div class="riga-campi">
+    <div>
+      <label for="categoria">Categoria</label>
+      {% set cat_sel = (form.get('categoria') if form else (regola.categoria if regola else '')) or '' %}
+      <select id="categoria" name="categoria">
+        <option value="">Scegliere una categoria</option>
+        {% for c in categorie %}
+        <option value="{{ c }}" {% if c == cat_sel %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="categoria_nuova">Oppure nuova categoria <span class="facolt">(se compilata prevale sulla scelta a fianco)</span></label>
+      <input type="text" id="categoria_nuova" name="categoria_nuova"
+             value="{{ (form.get('categoria_nuova') if form else '') or '' }}"
+             placeholder="es. fornitori">
+    </div>
+  </div>
+
+  <label for="descrizione">Descrizione</label>
+  <input type="text" id="descrizione" name="descrizione"
+         value="{{ (form.get('descrizione') if form else (regola.descrizione if regola else '')) or '' }}"
+         placeholder="Cosa intercetta la regola">
+
+  <label for="note">Note per il triage <span class="facolt">(facoltative)</span></label>
+  <textarea id="note" name="note" rows="2">{{ (form.get('note') if form else (regola.note if regola else '')) or '' }}</textarea>
+
+  {% set attiva_sel = ('attiva' in form) if form else (regola.attiva if regola else 1) %}
+  <label><input type="checkbox" name="attiva" value="1" {% if attiva_sel %}checked{% endif %}> Regola attiva (applicata nelle scansioni)</label>
+
+  <h2>Costruzione del pattern</h2>
+  <label for="tipo">Tipo di regola</label>
+  {% set tipo_sel = (form.get('tipo') if form else (regola.tipo if regola else 'parola')) or 'parola' %}
+  <select id="tipo" name="tipo">
+    {% for chiave, etichetta in tipi.items() %}
+    <option value="{{ chiave }}" {% if chiave == tipo_sel %}selected{% endif %}>{{ etichetta }}</option>
+    {% endfor %}
+  </select>
+
+  {% macro vp(nome) -%}
+    {{- (form.get(nome) if form else parametri.get(nome)) or '' -}}
+  {%- endmacro %}
+
+  <div class="campi-tipo" data-tipo="parola">
+    <label for="p_testo">Parola o frase da cercare</label>
+    <input type="text" id="p_testo" name="testo" value="{{ vp('testo') }}" placeholder="es. uso interno">
+    <p class="aiuto">La ricerca non distingue maiuscole e minuscole; gli spazi valgono anche se doppi o multipli.</p>
+  </div>
+
+  <div class="campi-tipo" data-tipo="varianti">
+    <label for="p_varianti">Elenco di varianti, una per riga</label>
+    <textarea id="p_varianti" name="varianti" rows="5" placeholder="password&#10;passwd&#10;pwd">{{ vp('varianti') }}</textarea>
+    <p class="aiuto">La regola scatta se compare una qualsiasi delle varianti elencate.</p>
+  </div>
+
+  <div class="campi-tipo" data-tipo="etichetta">
+    <label for="p_etichetta">Etichetta</label>
+    <input type="text" id="p_etichetta" name="etichetta" value="{{ vp('etichetta') }}" placeholder="es. cliente">
+    <p class="aiuto">Intercetta l'etichetta seguita da un valore, con o senza due punti o uguale: ad esempio "cliente: Rossi", "cliente = Rossi", "cliente Rossi".</p>
+  </div>
+
+  <div class="campi-tipo" data-tipo="codice">
+    <div class="riga-campi">
+      <div>
+        <label for="p_prefisso">Prefisso fisso</label>
+        <input type="text" id="p_prefisso" name="prefisso" value="{{ vp('prefisso') }}" placeholder="es. C-">
+      </div>
+      <div>
+        <label for="p_blocco1_tipo">Primo blocco: tipo di caratteri</label>
+        <select id="p_blocco1_tipo" name="blocco1_tipo">
+          {% for chiave, etichetta in classi.items() %}
+          <option value="{{ chiave }}" {% if chiave == vp('blocco1_tipo') %}selected{% endif %}>{{ etichetta }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="p_blocco1_n">Primo blocco: quanti caratteri</label>
+        <input type="number" id="p_blocco1_n" name="blocco1_n" min="1" max="30" value="{{ vp('blocco1_n') or '4' }}">
+      </div>
+    </div>
+    <div class="riga-campi">
+      <div>
+        <label for="p_separatore">Separatore <span class="facolt">(facoltativo)</span></label>
+        <input type="text" id="p_separatore" name="separatore" value="{{ vp('separatore') }}" placeholder="es. / oppure -">
+      </div>
+      <div>
+        <label for="p_blocco2_tipo">Secondo blocco: tipo <span class="facolt">(facoltativo)</span></label>
+        <select id="p_blocco2_tipo" name="blocco2_tipo">
+          {% for chiave, etichetta in classi.items() %}
+          <option value="{{ chiave }}" {% if chiave == vp('blocco2_tipo') %}selected{% endif %}>{{ etichetta }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="p_blocco2_n">Secondo blocco: quanti caratteri <span class="facolt">(0 = nessuno)</span></label>
+        <input type="number" id="p_blocco2_n" name="blocco2_n" min="0" max="30" value="{{ vp('blocco2_n') or '0' }}">
+      </div>
+    </div>
+    <p class="aiuto">Esempio: prefisso "C-" con 4 cifre intercetta C-2024, C-0815 e simili.</p>
+  </div>
+
+  <div class="campi-tipo" data-tipo="predefinito">
+    <label for="p_modello">Modello predefinito</label>
+    <select id="p_modello" name="modello">
+      <option value="">Scegliere un modello</option>
+      {% for chiave, coppia in predefiniti.items() %}
+      <option value="{{ chiave }}" {% if chiave == vp('modello') %}selected{% endif %}>{{ coppia[0] }}</option>
+      {% endfor %}
+    </select>
+    <p class="aiuto">Modelli pronti all'uso: indirizzo IP, indirizzo MAC, email, URL.</p>
+  </div>
+
+  <div class="campi-tipo" data-tipo="regex">
+    <label for="p_regex">Espressione regolare</label>
+    <input type="text" id="p_regex" name="regex" value="{{ vp('regex') }}" placeholder="es. \b(riservato|confidenziale)\b">
+    <p class="aiuto">Campo per utenti esperti. La sintassi viene verificata al salvataggio e nella prova live; in caso di errore compare un messaggio esplicativo.</p>
+  </div>
+
+  <h2>Prova live</h2>
+  <p class="nota-piccola">Incollare un testo di esempio e premere "Prova la regola": le corrispondenze vengono evidenziate in giallo prima ancora di salvare.</p>
+  <textarea id="testo-prova" rows="5" placeholder="Incollare qui un testo di esempio, ad esempio un estratto di un documento reale."></textarea>
+  <div style="margin-top:8px">
+    <button type="button" id="btn-prova" class="bottone-secondario">Prova la regola</button>
+  </div>
+  <div id="esito-prova" style="display:none">
+    <p id="prova-conteggio" style="margin:10px 0 2px"></p>
+    <div>Pattern generato: <span class="pattern-generato" id="prova-pattern"></span></div>
+    <div class="riquadro-prova" id="prova-evidenza"></div>
+  </div>
+  <div id="errore-prova" class="avviso avviso-errore" style="display:none; margin-top:10px"></div>
+
+  <div style="margin-top:22px">
+    <button type="submit">Salva la regola</button>
+    <a class="bottone bottone-secondario" href="{{ url_for('dizionario.lista') }}">Annulla</a>
+  </div>
+</form>
+{% endblock %}
+
+{% block script %}
+<script>const PROVA_URL = "{{ url_for('dizionario.prova') }}";</script>
+<script src="{{ url_for('static', filename='dizionario.js') }}"></script>
+{% endblock %}

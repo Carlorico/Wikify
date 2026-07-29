@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block titolo %}Perimetro e bozze, Wikify{% endblock %}
+{% block contenuto %}
+<div class="testata-pagina">
+  <h1>Validazione AI, perimetro e bozze</h1>
+</div>
+<div class="scheda">
+  <h2>Come funziona il ciclo agentico</h2>
+  <p>Questa pagina è il punto di scambio tra Wikify e l'agente di rilevazione
+  (Claude o Claude Code). Il principio di fondo: <strong>l'agente propone,
+  l'umano dispone</strong>. Nessuna classificazione entra nel sistema senza
+  una conferma umana, e l'agente consulta esclusivamente i file che il triage
+  ha qualificato Condivisibili.</p>
+  <ol class="elenco-passi">
+    <li><strong>Scarica il perimetro condivisibile</strong>: il file
+    <code>perimetro_condivisibile.json</code> elenca i soli file che l'agente
+    è autorizzato a leggere (qualifica Condivisibile nel triage della
+    scansione scelta). I file Riservati o Da valutare restano fuori: è il
+    cancello di sicurezza dell'intero ciclo.</li>
+    <li><strong>Scarica le istruzioni per l'agente</strong>: contengono la
+    procedura vincolante (leggere solo il perimetro, citare sempre
+    l'evidenza, dichiarare una confidenza onesta, sola lettura) e il
+    formato di consegna <code>wikify-bozza/1.0</code> con le tassonomie
+    ammesse.</li>
+    <li><strong>Consegna all'agente</strong> perimetro, istruzioni e accesso
+    in lettura alle cartelle: l'agente esamina i file ammessi e produce un
+    file JSON di bozza per ogni cartella progetto (proposte di tipologia,
+    riservatezza, versione ufficiale e forma delle caratteristiche, ognuna
+    con citazione testuale a supporto).</li>
+    <li><strong>Importa le bozze</strong> qui sotto: la validazione severa
+    scarta ogni proposta senza evidenza o fuori tassonomia; le proposte
+    accettate entrano nella <a href="{{ url_for('validazione.coda') }}">coda
+    di revisione</a>, ordinata con i casi più dubbi in cima.</li>
+    <li><strong>Valida e misura</strong>: le conferme e le correzioni del
+    responsabile tecnico alimentano le
+    <a href="{{ url_for('validazione.metriche') }}">metriche</a> di
+    affidabilità; l'export delle correzioni si restituisce all'agente come
+    esempi per il lotto successivo.</li>
+  </ol>
+  <p>
+    <a class="bottone bottone-secondario" href="{{ url_for('validazione.perimetro_documenti', nome='istruzioni') }}">Scarica istruzioni_agente.md</a>
+    <a class="bottone bottone-secondario" href="{{ url_for('validazione.perimetro_documenti', nome='formato') }}">Scarica formato_bozze.md</a>
+  </p>
+</div>
+
+<div class="scheda">
+  <h2>Perimetro condivisibile</h2>
+  {% if scansioni %}
+  <form method="get" action="{{ url_for('validazione.perimetro') }}" class="filtri">
+    <div>
+      <label for="scansione">Scansione di riferimento</label>
+      <select id="scansione" name="scansione" onchange="this.form.submit()">
+        {% for s in scansioni %}
+        <option value="{{ s.id }}" {% if scelta and s.id == scelta.id %}selected{% endif %}>
+          N. {{ s.id }} del {{ s.data }} ({{ s.radice }})
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <noscript><div><button type="submit">Aggiorna</button></div></noscript>
+  </form>
+  {% if perimetro %}
+  <div class="kpi-griglia">
+    <div class="kpi"><div class="numero">{{ perimetro.file_condivisibili | length }}</div>
+      <div class="voce">File condivisibili</div></div>
+    <div class="kpi"><div class="numero">{{ perimetro.file_esclusi | length }}</div>
+      <div class="voce">File esclusi dal perimetro</div></div>
+  </div>
+  <p><a class="bottone" href="{{ url_for('validazione.perimetro_export', scansione=scelta.id) }}">Scarica perimetro_condivisibile.json</a></p>
+  <details>
+    <summary>File condivisibili ({{ perimetro.file_condivisibili | length }})</summary>
+    <div class="tabella-scroll">
+    <table id="tabella-condivisibili">
+      <tr><th>Percorso</th></tr>
+      {% for f in perimetro.file_condivisibili %}
+      <tr><td class="rompi">{{ f }}</td></tr>
+      {% else %}
+      <tr><td>Nessun file qualificato Condivisibile in questa scansione.</td></tr>
+      {% endfor %}
+    </table>
+    </div>
+  </details>
+  <details>
+    <summary>File esclusi ({{ perimetro.file_esclusi | length }})</summary>
+    <div class="tabella-scroll">
+    <table id="tabella-esclusi">
+      <tr><th>Percorso</th><th>Qualifica</th></tr>
+      {% for e in perimetro.file_esclusi %}
+      <tr><td class="rompi">{{ e.percorso }}</td>
+          <td><span class="badge badge-{{ e.qualifica.split(' ')[0] }}">{{ e.qualifica }}</span></td></tr>
+      {% else %}
+      <tr><td colspan="2">Nessun file escluso.</td></tr>
+      {% endfor %}
+    </table>
+    </div>
+  </details>
+  {% endif %}
+  {% else %}
+  <p>Nessuna scansione completata: eseguire prima una scansione di
+  riservatezza e il triage dei file.</p>
+  {% endif %}
+</div>
+
+<div class="scheda">
+  <h2>Importa bozze dell'agente</h2>
+  <form method="post" action="{{ url_for('validazione.perimetro_importa') }}" enctype="multipart/form-data">
+    <label for="bozze">File bozza (.json, formato wikify-bozza/1.0, anche più di uno)</label>
+    <input type="file" id="bozze" name="bozze" accept=".json,application/json" multiple required>
+    <p class="aiuto">Validazione severa all'import: i file con formato
+    sconosciuto vengono rifiutati; le proposte senza evidenza (posizione o
+    citazione), con campo non previsto o valore fuori tassonomia vengono
+    scartate e conteggiate; le citazioni oltre 300 caratteri vengono troncate
+    con nota.</p>
+    <div style="margin-top:12px"><button type="submit">Importa</button></div>
+  </form>
+</div>
+
+<h2>Lotti importati</h2>
+<div class="tabella-scroll">
+<table id="tabella-lotti">
+  <tr><th>N.</th><th>Data import</th><th>File di origine</th>
+      <th>Cartella progetto</th><th>Accettate</th><th>Scartate</th>
+      <th>Troncate</th><th>Avanzamento</th><th>Stato</th><th></th></tr>
+  {% for l in lotti %}
+  <tr>
+    <td>{{ l.id }}</td>
+    <td>{{ l.data_import }}</td>
+    <td class="rompi">{{ l.nome_file_origine }}</td>
+    <td class="rompi">{{ l.cartella_progetto }}</td>
+    <td>{{ l.n_accettate }}</td>
+    <td>{{ l.n_scartate }}</td>
+    <td>{{ l.n_troncate }}</td>
+    <td>{{ l.n_validate }}/{{ l.n_accettate }} validate</td>
+    <td>
+      {% if l.stato == 'completato' %}<span class="badge badge-on">completato</span>
+      {% elif l.stato == 'in validazione' %}<span class="badge badge-media">in validazione</span>
+      {% else %}<span class="badge badge-off">importato</span>{% endif %}
+    </td>
+    <td><a class="bottone bottone-secondario bottone-piccolo"
+           href="{{ url_for('validazione.perimetro_lotto', lid=l.id) }}">Dettaglio</a></td>
+  </tr>
+  {% else %}
+  <tr><td colspan="10">Nessun lotto importato.</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

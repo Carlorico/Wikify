@@ -1,0 +1,118 @@
+# =============================================================================
+# Dizionario dei pattern di riservatezza - Metodo A (scanner deterministico)
+# =============================================================================
+# Versione di partenza, da raffinare con il responsabile tecnico.
+#
+# Struttura di ogni voce:
+#   id:        codice univoco della regola
+#   categoria: famiglia di informazione riservata
+#   descrizione: cosa intercetta la regola
+#   pattern:   espressione regolare (case-insensitive)
+#   severita:  alta | media | bassa
+#              alta  = quasi certamente riservato
+#              media = probabilmente riservato, da valutare in triage
+#              bassa = indizio debole, utile per il campionamento di controllo
+#   note:      indicazioni per il triage o per il raffinamento
+#
+# Regola di manutenzione: ogni falso negativo scoperto in seguito (anche dal
+# Metodo B) va ricondotto qui come nuova voce o raffinamento di una esistente.
+# =============================================================================
+
+regole:
+
+  # --- Credenziali e chiavi di accesso -----------------------------------
+  - id: CRED-01
+    categoria: credenziali
+    descrizione: Parole chiave di credenziali di accesso
+    pattern: '\b(password|passwd|pwd|passphrase|credenziali)\b'
+    severita: alta
+    note: Verificare se seguite da un valore reale o solo citate in prosa.
+
+  - id: CRED-02
+    categoria: credenziali
+    descrizione: Chiavi, token e codici di attivazione
+    pattern: '\b(api[ -_]?key|token|chiave\s+(di\s+)?(accesso|attivazione|licenza)|licen[sz]e\s+key)\b'
+    severita: alta
+    note: ''
+
+  - id: CRED-03
+    categoria: credenziali
+    descrizione: Coppie utente/password esplicite
+    pattern: '\b(user(name)?|utente|login)\s*[:=]\s*\S+'
+    severita: alta
+    note: Frequenti nei manuali di installazione, sezione messa in servizio.
+
+  # --- Parametri di interconnessione -------------------------------------
+  - id: INT-01
+    categoria: interconnessione
+    descrizione: Indirizzi IP
+    pattern: '\b(?:\d{1,3}\.){3}\d{1,3}\b'
+    severita: media
+    note: Gli IP di esempio (192.168.x.x nei manuali) possono essere condivisibili; quelli di impianti cliente no.
+
+  - id: INT-02
+    categoria: interconnessione
+    descrizione: Indirizzi MAC
+    pattern: '\b(?:[0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}\b'
+    severita: media
+    note: ''
+
+  - id: INT-03
+    categoria: interconnessione
+    descrizione: Parametri di rete e di bus
+    pattern: '\b(subnet\s*mask|gateway|porta\s+(tcp|udp|com)|baud\s*rate|indirizzo\s+(modbus|nodo|slave)|slave\s+id)\b'
+    severita: media
+    note: Da valutare se il valore associato è specifico di un impianto cliente.
+
+  # --- Parametri di configurazione e taratura ----------------------------
+  - id: CFG-01
+    categoria: configurazione
+    descrizione: Sezioni di parametri di configurazione
+    pattern: '\b(parametri\s+di\s+configurazione|registro\s+di\s+configurazione|mappa\s+(dei\s+)?registri|configurazione\s+avanzata)\b'
+    severita: alta
+    note: Tipico caso di documento misto, manuale con capitolo riservato.
+
+  - id: CFG-02
+    categoria: configurazione
+    descrizione: Dati di taratura e calibrazione
+    pattern: '\b(taratura|calibrazione|coefficient[ei]\s+di\s+(correzione|taratura)|offset\s+di|setpoint)\b'
+    severita: media
+    note: ''
+
+  - id: CFG-03
+    categoria: configurazione
+    descrizione: Firmware e versioni interne
+    pattern: '\b(firmware|bootloader|versione\s+(interna|di\s+fabbrica))\b'
+    severita: bassa
+    note: Indizio debole, spesso presente anche in documentazione pubblica.
+
+  # --- Riferimenti a clienti e commesse ----------------------------------
+  - id: CLI-01
+    categoria: cliente
+    descrizione: Riferimenti espliciti a cliente
+    pattern: '\b(cliente|committente|end\s*user)\s*[:=]?\s*\S+'
+    severita: media
+    note: 'Da raffinare: se esiste una lista clienti, sostituire con pattern sui nomi reali.'
+
+  - id: CLI-02
+    categoria: cliente
+    descrizione: Codici commessa
+    pattern: '\b(commessa|ordine|offerta)\s*(n\.?|nr\.?|numero)?\s*[:=]?\s*[A-Z0-9][A-Z0-9\-\/]{2,}\b'
+    severita: media
+    note: 'Adattare il formato al codice commessa reale dell''azienda.'
+
+  # --- Dati di sperimentazione --------------------------------------------
+  - id: SPE-01
+    categoria: sperimentazione
+    descrizione: Report di prova e collaudo
+    pattern: '\b(esito\s+(della\s+)?prova|rapporto\s+di\s+(prova|collaudo)|test\s+report|verbale\s+di\s+collaudo)\b'
+    severita: media
+    note: I dati di sperimentazione non pubblicati sono ipotesi di riservatezza da confermare.
+
+  # --- Marcature esplicite di riservatezza --------------------------------
+  - id: MRK-01
+    categoria: marcatura_esplicita
+    descrizione: Documento già marcato come riservato
+    pattern: '\b(riservato|confidenziale|confidential|non\s+divulgare|uso\s+interno|internal\s+use\s+only|proprietary)\b'
+    severita: alta
+    note: Segnale forte, la marcatura esplicita prevale su ogni altra valutazione.

@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block titolo %}Wikify{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="testata">
+  <div class="marchio">
+    <a href="{{ url_for('home') }}">
+      <img src="{{ url_for('static', filename='wikify_logo_header.png') }}" alt="Wikify" class="logo">
+    </a>
+    <span class="claim">Trasforma un archivio in una wiki</span>
+  </div>
+  {% if session.get("utente_id") %}
+  <div class="area-utente">
+    <span class="utente-chip">{{ session.get("utente_nome") }}</span>
+    <a class="link-uscita" href="{{ url_for('utenti.uscita') }}">Esci</a>
+  </div>
+  {% endif %}
+</header>
+{% set ep = request.endpoint or "" %}
+<div class="corpo-app">
+{% if session.get("utente_id") %}
+<aside id="sidebar" class="sidebar">
+  <button id="menu-toggle" class="hamburger" aria-label="Apri o chiudi il menu" aria-expanded="true">&#9776;</button>
+  <nav class="menu-verticale">
+    <a class="voce-menu {{ 'attiva' if ep == 'home' }}" href="{{ url_for('home') }}">
+      <span class="icona-voce">&#8962;</span><span class="testo-voce">Dashboard</span>
+    </a>
+    {% set sezione_classificazione = ep.startswith('storico.') or ep.startswith('dizionario.') or ep.startswith('scansione.') %}
+    <details class="sezione-menu" {% if sezione_classificazione %}open{% endif %}>
+      <summary class="voce-menu voce-sezione {{ 'attiva' if sezione_classificazione }}">
+        <span class="icona-voce">&#9776;</span><span class="testo-voce">Classificazione base</span>
+      </summary>
+      <a class="voce-menu sotto-voce {{ 'attiva' if ep.startswith('storico.') or ep.startswith('scansione.') }}" href="{{ url_for('storico.lista') }}">
+        <span class="testo-voce">Storico</span>
+      </a>
+      <a class="voce-menu sotto-voce {{ 'attiva' if ep.startswith('dizionario.') }}" href="{{ url_for('dizionario.lista') }}">
+        <span class="testo-voce">Dizionario</span>
+      </a>
+    </details>
+    {% set sezione_catalogo = ep.startswith('catalogo.') %}
+    {% set voce_arricchimento = ep.startswith('catalogo.arricchimento') %}
+    <details class="sezione-menu" {% if sezione_catalogo %}open{% endif %}>
+      <summary class="voce-menu voce-sezione {{ 'attiva' if sezione_catalogo }}">
+        <span class="icona-voce">&#128218;</span><span class="testo-voce">Catalogo</span>
+      </summary>
+      <a class="voce-menu sotto-voce {{ 'attiva' if sezione_catalogo and not voce_arricchimento }}" href="{{ url_for('catalogo.definizione') }}">
+        <span class="testo-voce">Definizione entità</span>
+      </a>
+      <a class="voce-menu sotto-voce {{ 'attiva' if voce_arricchimento }}" href="{{ url_for('catalogo.arricchimento') }}">
+        <span class="testo-voce">Arricchimento dati</span>
+      </a>
+    </details>
+    {% set sezione_validazione = ep.startswith('validazione.') %}
+    <details class="sezione-menu" {% if sezione_validazione %}open{% endif %}>
+      <summary class="voce-menu voce-sezione {{ 'attiva' if sezione_validazione }}">
+        <span class="icona-voce">&#10003;</span><span class="testo-voce">Validazione AI</span>
+      </summary>
+      <a class="voce-menu sotto-voce {{ 'attiva' if ep.startswith('validazione.perimetro') }}" href="{{ url_for('validazione.perimetro') }}">
+        <span class="testo-voce">Perimetro e bozze</span>
+      </a>
+      <a class="voce-menu sotto-voce {{ 'attiva' if ep.startswith('validazione.coda') }}" href="{{ url_for('validazione.coda') }}">
+        <span class="testo-voce">Coda di revisione</span>
+      </a>
+      <a class="voce-menu sotto-voce {{ 'attiva' if ep.startswith('validazione.metriche') }}" href="{{ url_for('validazione.metriche') }}">
+        <span class="testo-voce">Metriche</span>
+      </a>
+      <a class="voce-menu sotto-voce {{ 'attiva' if ep.startswith('validazione.impostazioni') }}" href="{{ url_for('validazione.impostazioni_analisi') }}">
+        <span class="testo-voce">Impostazioni analisi</span>
+      </a>
+    </details>
+    <a class="voce-menu {{ 'attiva' if ep == 'utenti.anagrafica' }}" href="{{ url_for('utenti.anagrafica') }}">
+      <span class="icona-voce">&#128101;</span><span class="testo-voce">Utenti</span>
+    </a>
+    <a class="voce-menu {{ 'attiva' if ep == 'utenti.password' }}" href="{{ url_for('utenti.password') }}">
+      <span class="icona-voce">&#128273;</span><span class="testo-voce">Password</span>
+    </a>
+    <a class="voce-menu" href="{{ url_for('utenti.uscita') }}">
+      <span class="icona-voce">&#10162;</span><span class="testo-voce">Logout</span>
+    </a>
+  </nav>
+</aside>
+{% endif %}
+<main>
+{% with messaggi = get_flashed_messages(with_categories=true) %}
+  {% for categoria, testo in messaggi %}
+    <div class="avviso avviso-{{ categoria }}">{{ testo }}</div>
+  {% endfor %}
+{% endwith %}
+{% block contenuto %}{% endblock %}
+</main>
+</div>
+<footer>
+  <p class="footer-nota">Elaborazione interamente locale: nessun contenuto lascia questo computer.</p>
+  <p class="footer-disclaimer">Questo prototipo è stato progettato e implementato tramite l'orchestrazione di sistemi AI e agenti intelligenti,
+  sotto la direzione tecnica di Carlo Verdini
+  &#9993;&#65039; <a href="mailto:cverdini@gmail.com">cverdini@gmail.com</a></p>
+</footer>
+<script>
+(function () {
+  var btn = document.getElementById("menu-toggle");
+  var sidebar = document.getElementById("sidebar");
+  if (btn && sidebar) {
+    var aperta = localStorage.getItem("wikify_sidebar") !== "chiusa";
+    function applica() {
+      sidebar.classList.toggle("sidebar-chiusa", !aperta);
+      btn.setAttribute("aria-expanded", aperta ? "true" : "false");
+    }
+    btn.addEventListener("click", function () {
+      aperta = !aperta;
+      localStorage.setItem("wikify_sidebar", aperta ? "aperta" : "chiusa");
+      applica();
+    });
+    applica();
+  }
+})();
+</script>
+{% block script %}{% endblock %}
+</body>
+</html>

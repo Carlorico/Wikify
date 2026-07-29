@@ -1,0 +1,19 @@
+# Dati di lavoro dell'applicazione.
+# La cartella dati predefinita e' "Wikify_dati", sorella di questa cartella e
+# quindi gia' fuori dal repository; la riga seguente copre l'eventualita' che
+# l'app venga avviata senza ARCHIVIO_SMART_DATA (ripiego su app/data).
+data/
+app/data/
+
+# Scorie di Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Scorie di sistema ed editor
+.DS_Store
+.idea/
+.vscode/
+*.swp

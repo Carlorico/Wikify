@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block titolo %}Dizionario dei pattern{% endblock %}
+{% block contenuto %}
+<h1>Dizionario dei pattern</h1>
+<p>{{ regole|length }} regole visualizzate, {{ n_attive }} attive in totale. Le scansioni applicano soltanto le regole attive.</p>
+
+<div class="azioni-inline" style="margin-bottom:16px">
+  <a class="bottone" href="{{ url_for('dizionario.nuova') }}">Nuova regola</a>
+  <a class="bottone bottone-secondario" href="{{ url_for('dizionario.export_yaml') }}">Esporta YAML (scanner CLI)</a>
+  <a class="bottone bottone-secondario" href="{{ url_for('dizionario.importa') }}">Importa YAML</a>
+</div>
+
+<form method="get" class="filtri scheda">
+  <div>
+    <label for="f-cat">Categoria</label>
+    <select id="f-cat" name="categoria">
+      <option value="">Tutte</option>
+      {% for c in categorie %}
+      <option value="{{ c }}" {% if c == f_categoria %}selected{% endif %}>{{ c }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="f-sev">Severità</label>
+    <select id="f-sev" name="severita">
+      <option value="">Tutte</option>
+      {% for s in ["alta", "media", "bassa"] %}
+      <option value="{{ s }}" {% if s == f_severita %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="f-stato">Stato</label>
+    <select id="f-stato" name="stato">
+      <option value="">Tutte</option>
+      <option value="attive" {% if f_stato == "attive" %}selected{% endif %}>Attive</option>
+      <option value="disattivate" {% if f_stato == "disattivate" %}selected{% endif %}>Disattivate</option>
+    </select>
+  </div>
+  <div style="flex:2">
+    <label for="f-q">Ricerca libera</label>
+    <input type="text" id="f-q" name="q" value="{{ f_testo }}" placeholder="codice, descrizione, note o pattern">
+  </div>
+  <div>
+    <button type="submit">Filtra</button>
+    <a class="bottone bottone-secondario" href="{{ url_for('dizionario.lista') }}">Azzera</a>
+  </div>
+</form>
+
+<div class="tabella-scroll">
+<table>
+  <tr>
+    <th>Codice</th><th>Categoria</th><th>Descrizione</th><th>Tipo</th>
+    <th>Severità</th><th>Stato</th><th>Azioni</th>
+  </tr>
+  {% for r in regole %}
+  <tr>
+    <td><strong>{{ r.codice }}</strong></td>
+    <td>{{ r.categoria }}</td>
+    <td>{{ r.descrizione }}{% if r.note %}<div class="nota-piccola">{{ r.note }}</div>{% endif %}</td>
+    <td>{{ tipi.get(r.tipo, r.tipo) }}</td>
+    <td><span class="badge badge-{{ r.severita }}">{{ r.severita }}</span></td>
+    <td>
+      {% if r.attiva %}<span class="badge badge-on">attiva</span>
+      {% else %}<span class="badge badge-off">disattivata</span>{% endif %}
+    </td>
+    <td>
+      <div class="azioni-inline">
+        <a class="bottone bottone-secondario bottone-piccolo" href="{{ url_for('dizionario.modifica', rid=r.id) }}">Modifica</a>
+        <form method="post" action="{{ url_for('dizionario.toggle', rid=r.id) }}">
+          <button type="submit" class="bottone-secondario bottone-piccolo">
+            {% if r.attiva %}Disattiva{% else %}Attiva{% endif %}
+          </button>
+        </form>
+        <form method="post" action="{{ url_for('dizionario.elimina', rid=r.id) }}"
+              onsubmit="return confirm('Eliminare definitivamente la regola {{ r.codice }}? In alternativa è possibile disattivarla.');">
+          <button type="submit" class="bottone-pericolo bottone-piccolo">Elimina</button>
+        </form>
+      </div>
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="7">Nessuna regola corrisponde ai filtri impostati.</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

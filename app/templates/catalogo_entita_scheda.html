@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block titolo %}Entità {{ entita.chiave }}, Wikify{% endblock %}
+{% block contenuto %}
+<div class="testata-pagina">
+  <h1>Scheda entità: {{ entita.chiave }}</h1>
+  <a class="bottone bottone-secondario" href="{{ url_for('catalogo.entita_lista', tipo=entita.tipo_id) }}">Torna all'elenco</a>
+</div>
+
+<div class="scheda">
+  <table>
+    <tr><th style="width:220px">Tipo di entità</th><td>{{ entita.tipo_nome }}</td></tr>
+    <tr><th>Chiave</th><td><strong>{{ entita.chiave }}</strong></td></tr>
+    <tr><th>Cartella collegata</th><td class="rompi">{{ entita.cartella_origine or "(nessuna)" }}</td></tr>
+    <tr><th>Stato</th><td>
+      {% if entita.stato == 'attiva' %}<span class="badge badge-on">attiva</span>
+      {% else %}<span class="badge badge-media">senza riscontro</span>{% endif %}
+    </td></tr>
+    <tr><th>Creata il</th><td>{{ entita.data_creazione }}</td></tr>
+    <tr><th>Ultimo riallineamento</th><td>{{ entita.data_riallineamento or "" }}</td></tr>
+  </table>
+</div>
+
+<h2>Attributi ({{ attributi | length }})</h2>
+{% if attributi %}
+<div class="tabella-scroll">
+<table id="tabella-attributi">
+  <tr><th>Attributo</th><th>Valore</th><th>Provenienza</th></tr>
+  {% for a in attributi %}
+  <tr>
+    <td>{{ a.attributo }}</td>
+    <td><strong>{{ a.valore }}</strong></td>
+    <td class="contesto-cella">
+      {% for p in a.provenienze %}
+      importazione da <strong>{{ p.file }}</strong> del {{ p.data }}{% if p.utente %}, utente {{ p.utente }}{% endif %}{% if not loop.last %}<br>{% endif %}
+      {% endfor %}
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+{% else %}
+<div class="scheda"><p>Nessun attributo agganciato: caricare un file dalla pagina
+"Arricchimento dati" per popolare la scheda.</p></div>
+{% endif %}
+{% endblock %}

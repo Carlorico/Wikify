@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block titolo %}Anteprima di qualità, Wikify{% endblock %}
+{% block contenuto %}
+<h1>Arricchimento dati: anteprima di qualità</h1>
+<p class="nota-piccola">File <strong>{{ dati.nome_file }}</strong>, destinazione:
+entità di tipo <strong>{{ tipo.nome }}</strong>. Nessun dato è stato ancora
+salvato: verificare il quadro e confermare.</p>
+
+<div class="kpi-griglia">
+  <div class="kpi"><div class="numero">{{ analisi.n_righe }}</div><div class="voce">Righe di dati nel file</div></div>
+  <div class="kpi"><div class="numero">{{ analisi.n_valori }}</div><div class="voce">Valori da salvare</div></div>
+  <div class="kpi"><div class="numero">{{ analisi.n_valori_nuovi }}</div><div class="voce">Valori nuovi (non già presenti)</div></div>
+  <div class="kpi"><div class="numero {{ 'alta' if analisi.scartate }}">{{ analisi.scartate | length }}</div><div class="voce">Righe con chiave senza entità</div></div>
+  <div class="kpi"><div class="numero {{ 'media' if analisi.entita_non_citate }}">{{ analisi.entita_non_citate | length }}</div><div class="voce">Entità mai citate dal file</div></div>
+  <div class="kpi"><div class="numero">{{ analisi.duplicati_esatti | length + analisi.duplicati_norm | length }}</div><div class="voce">Duplicati nel file (deduplicati)</div></div>
+</div>
+
+<div class="scheda">
+  <h2>Attributi mappati</h2>
+  <table>
+    <tr><th>Colonna del file</th><th>Nome attributo</th></tr>
+    <tr><td><strong>{{ dati.intestazioni[mappatura.chiave_col] }}</strong></td><td><em>chiave entità</em></td></tr>
+    {% for colonna, nome in intestazioni_mappate %}
+    <tr><td>{{ colonna }}</td><td>{{ nome }}</td></tr>
+    {% endfor %}
+  </table>
+</div>
+
+{% if analisi.scartate %}
+<h2>Righe con chiave senza entità ({{ analisi.scartate | length }})</h2>
+<p class="nota-piccola">Queste righe verranno scartate e registrate come anomalie.</p>
+<div class="scheda"><table id="tabella-scartate">
+  <tr><th>Riga del file</th><th>Chiave</th><th>Motivo</th></tr>
+  {% for s in analisi.scartate %}
+  <tr><td>{{ s.riga }}</td><td>{{ s.chiave }}</td><td>{{ s.motivo }}</td></tr>
+  {% endfor %}
+</table></div>
+{% endif %}
+
+{% if analisi.entita_non_citate %}
+<h2>Entità mai citate dal file ({{ analisi.entita_non_citate | length }})</h2>
+<div class="scheda"><p class="contesto-cella">{{ analisi.entita_non_citate | join(", ") }}</p></div>
+{% endif %}
+
+{% if analisi.normalizzazioni %}
+<h2>Chiavi agganciate dopo normalizzazione ({{ analisi.normalizzazioni | length }})</h2>
+<div class="scheda"><table>
+  <tr><th>Riga</th><th>Chiave nel file</th><th>Entità</th><th>Normalizzazioni applicate</th></tr>
+  {% for m in analisi.normalizzazioni %}
+  <tr><td>{{ m.riga }}</td><td>{{ m.chiave }}</td><td>{{ m.entita }}</td><td>{{ m.passi | join(", ") }}</td></tr>
+  {% endfor %}
+</table></div>
+{% endif %}
+
+{% if analisi.duplicati_esatti or analisi.duplicati_norm %}
+<h2>Duplicati nel file</h2>
+<p class="nota-piccola">I duplicati vengono deduplicati al salvataggio e tracciati
+come anomalie.</p>
+<div class="scheda"><table>
+  <tr><th>Riga</th><th>Chiave</th><th>Attributo</th><th>Valore</th><th>Tipo</th></tr>
+  {% for d in analisi.duplicati_esatti %}
+  <tr><td>{{ d.riga }}</td><td>{{ d.chiave }}</td><td>{{ d.attributo }}</td><td>{{ d.valore }}</td><td>duplicato esatto</td></tr>
+  {% endfor %}
+  {% for d in analisi.duplicati_norm %}
+  <tr><td>{{ d.riga }}</td><td>{{ d.chiave }}</td><td>{{ d.attributo }}</td><td>{{ d.valore }}</td>
+      <td>post-normalizzazione ({{ d.passi | join(", ") }}), conservato "{{ d.conservato }}"</td></tr>
+  {% endfor %}
+</table></div>
+{% endif %}
+
+<form method="post" action="{{ url_for('catalogo.arricchimento_conferma', token=token) }}" class="scheda">
+  <input type="hidden" name="mappatura_json" value='{{ mappatura_json }}'>
+  <p>Confermando, i {{ analisi.n_valori }} valori vengono salvati con provenienza
+  (importazione, file, data, utente della sessione). L'import resterà rimovibile
+  in blocco in qualsiasi momento.</p>
+  <div class="azioni-inline">
+    <button type="submit">Conferma e salva</button>
+    <a class="bottone bottone-secondario" href="{{ url_for('catalogo.arricchimento_mappatura', token=token) }}">Torna alla mappatura</a>
+    <a class="bottone bottone-secondario" href="{{ url_for('catalogo.arricchimento') }}">Annulla</a>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block titolo %}Mappatura colonne, Wikify{% endblock %}
+{% block contenuto %}
+<h1>Arricchimento dati: mappatura delle colonne</h1>
+<p class="nota-piccola">File <strong>{{ dati.nome_file }}</strong>,
+{{ dati.righe | length }} righe di dati, destinazione: entità di tipo
+<strong>{{ tipo.nome }}</strong>. Scegliere la colonna che contiene la chiave
+dell'entità e quali colonne importare come attributi (il nome dell'attributo è
+l'intestazione, rinominabile; le colonne non spuntate vengono escluse).</p>
+
+<h2>Anteprima (prime 10 righe)</h2>
+<div class="tabella-scroll">
+<table id="tabella-anteprima">
+  <tr>{% for h in dati.intestazioni %}<th>{{ h }}</th>{% endfor %}</tr>
+  {% for riga in anteprima %}
+  <tr>{% for c in riga %}<td class="contesto-cella">{{ c }}</td>{% endfor %}</tr>
+  {% endfor %}
+</table>
+</div>
+
+<form method="post" action="{{ url_for('catalogo.arricchimento_anteprima', token=token) }}" class="scheda">
+  <h2>Mappatura</h2>
+  <div class="tabella-scroll">
+  <table id="tabella-mappatura">
+    <tr><th>Colonna del file</th><th>Chiave entità</th><th>Importa come attributo</th><th>Nome attributo</th></tr>
+    {% for h in dati.intestazioni %}
+    {% set i = loop.index0 %}
+    <tr>
+      <td><strong>{{ h }}</strong></td>
+      <td><input type="radio" name="chiave_col" value="{{ i }}" {% if i == 0 %}checked{% endif %} aria-label="Chiave entità: {{ h }}"></td>
+      <td><input type="checkbox" name="includi_{{ i }}" value="1" {% if i > 0 %}checked{% endif %} aria-label="Importa {{ h }}"></td>
+      <td><input type="text" name="nome_{{ i }}" value="{{ h }}" aria-label="Nome attributo per {{ h }}"></td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+  <p class="aiuto">La colonna scelta come chiave non viene importata come
+  attributo. Più righe con la stessa chiave sono ammesse: ogni riga aggiunge un
+  valore (relazione 1:N), i valori identici vengono deduplicati.</p>
+  <div style="margin-top:14px" class="azioni-inline">
+    <button type="submit">Prosegui: anteprima di qualità</button>
+    <a class="bottone bottone-secondario" href="{{ url_for('catalogo.arricchimento') }}">Annulla</a>
+  </div>
+</form>
+{% endblock %}

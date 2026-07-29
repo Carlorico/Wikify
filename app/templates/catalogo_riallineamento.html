@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block titolo %}Riallineamento {{ tipo.nome }}, Wikify{% endblock %}
+{% block contenuto %}
+<div class="testata-pagina">
+  <h1>Riallineamento: {{ tipo.nome }}</h1>
+  <div class="azioni-inline">
+    <a class="bottone bottone-secondario" href="{{ url_for('catalogo.definizione') }}">Torna alla definizione</a>
+    <a class="bottone bottone-secondario" href="{{ url_for('catalogo.entita_lista', tipo=tipo.id) }}">Entità del tipo</a>
+  </div>
+</div>
+<p class="nota-piccola">Eseguito il {{ report.data }}. Il riallineamento crea le
+entità nuove e marca "senza riscontro" quelle senza più cartella corrispondente:
+nessuna entità viene mai cancellata.</p>
+
+<div class="kpi-griglia">
+  <div class="kpi"><div class="numero">{{ report.create | length }}</div><div class="voce">Entità create</div></div>
+  <div class="kpi"><div class="numero">{{ report.riattivate | length }}</div><div class="voce">Riattivate</div></div>
+  <div class="kpi"><div class="numero {{ 'media' if report.orfane }}">{{ report.orfane | length }}</div><div class="voce">Marcate senza riscontro</div></div>
+  <div class="kpi"><div class="numero {{ 'alta' if report.conflitti }}">{{ report.conflitti | length }}</div><div class="voce">Chiavi in conflitto</div></div>
+  <div class="kpi"><div class="numero">{{ report.n_attive }}</div><div class="voce">Entità attive totali</div></div>
+</div>
+
+{% if report.create %}
+<h2>Entità create ({{ report.create | length }})</h2>
+<div class="scheda"><table>
+  <tr><th>Chiave</th><th>Cartella</th></tr>
+  {% for r in report.create %}<tr><td>{{ r.chiave }}</td><td class="rompi">{{ r.cartella }}</td></tr>{% endfor %}
+</table></div>
+{% endif %}
+
+{% if report.riattivate %}
+<h2>Entità riattivate ({{ report.riattivate | length }})</h2>
+<div class="scheda"><table>
+  <tr><th>Chiave</th><th>Cartella</th></tr>
+  {% for r in report.riattivate %}<tr><td>{{ r.chiave }}</td><td class="rompi">{{ r.cartella }}</td></tr>{% endfor %}
+</table></div>
+{% endif %}
+
+{% if report.orfane %}
+<h2>Entità senza riscontro ({{ report.orfane | length }})</h2>
+<p class="nota-piccola">La cartella di origine è sparita o non matcha più il
+criterio. L'entità e i suoi attributi restano nel catalogo.</p>
+<div class="scheda"><table>
+  <tr><th>Chiave</th><th>Ultima cartella nota</th></tr>
+  {% for r in report.orfane %}<tr><td>{{ r.chiave }}</td><td class="rompi">{{ r.cartella }}</td></tr>{% endfor %}
+</table></div>
+{% endif %}
+
+{% if report.conflitti %}
+<h2>Conflitti di chiave ({{ report.conflitti | length }})</h2>
+<p class="nota-piccola">Due o più cartelle producono la stessa chiave: le cartelle
+coinvolte restano senza entità finché il conflitto non viene risolto, ad esempio
+escludendo una cartella dalla generazione o cambiando il criterio.</p>
+<div class="scheda"><table id="tabella-conflitti">
+  <tr><th>Chiave duplicata</th><th>Cartella</th><th>Azione</th></tr>
+  {% for chiave, cartelle in report.conflitti.items() %}
+    {% for cartella in cartelle %}
+    <tr>
+      <td>{{ chiave }}</td>
+      <td class="rompi">{{ cartella }}</td>
+      <td>
+        <form method="post" action="{{ url_for('catalogo.tipo_escludi', tid=tipo.id) }}">
+          <input type="hidden" name="cartella" value="{{ cartella }}">
+          <button type="submit" class="bottone-secondario bottone-piccolo">Escludi dalla generazione</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  {% endfor %}
+</table></div>
+{% endif %}
+
+{% if report.senza_estrazione %}
+<h2>Cartelle senza estrazione ({{ report.senza_estrazione | length }})</h2>
+<p class="nota-piccola">Da questi nomi il criterio non estrae alcuna chiave:
+nessuna entità viene generata.</p>
+<div class="scheda"><table>
+  <tr><th>Cartella</th></tr>
+  {% for c in report.senza_estrazione %}<tr><td class="rompi">{{ c }}</td></tr>{% endfor %}
+</table></div>
+{% endif %}
+
+{% if report.escluse %}
+<h2>Cartelle escluse ({{ report.escluse | length }})</h2>
+<div class="scheda"><table>
+  <tr><th>Cartella</th></tr>
+  {% for c in report.escluse %}<tr><td class="rompi">{{ c }}</td></tr>{% endfor %}
+</table></div>
+{% endif %}
+{% endblock %}

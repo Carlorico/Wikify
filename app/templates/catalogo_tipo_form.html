@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block titolo %}{% if tipo %}Modifica tipo di entità{% else %}Nuovo tipo di entità{% endif %}, Wikify{% endblock %}
+{% block contenuto %}
+<h1>{% if tipo %}Modifica tipo di entità: {{ tipo.nome }}{% else %}Nuovo tipo di entità{% endif %}</h1>
+<p class="nota-piccola">Le istanze vengono generate dalle cartelle di primo livello
+dell'inventario. Prima di salvare è obbligatoria la prova live: la tabella mostra,
+per ogni cartella reale, la chiave estratta, le cartelle da cui non si estrae
+nulla e le chiavi duplicate (conflitti).</p>
+
+<form method="post" class="scheda">
+  <input type="hidden" name="escluse_json" value='{{ escluse | tojson }}'>
+  <label for="nome">Nome del tipo di entità</label>
+  <input type="text" id="nome" name="nome" required
+         value="{{ (form.get('nome') if form else (tipo.nome if tipo else '')) or '' }}"
+         placeholder="es. Progetto">
+
+  <h2>Criterio di estrazione della chiave</h2>
+  <p class="aiuto">Sorgente: cartelle di primo livello dell'inventario.</p>
+  {% set modo_sel = (form.get('modo') if form else modo_default) or 'intero' %}
+  <label for="modo">Modalità</label>
+  <select id="modo" name="modo">
+    {% for chiave, etichetta in modi.items() %}
+    <option value="{{ chiave }}" {% if chiave == modo_sel %}selected{% endif %}>{{ etichetta }}</option>
+    {% endfor %}
+  </select>
+
+  {% macro vp(nome) -%}
+    {{- (form.get(nome) if form else parametri.get(nome)) or '' -}}
+  {%- endmacro %}
+
+  <div class="campi-tipo" data-modo="intero">
+    <p class="aiuto">La chiave è il nome intero della cartella (es. la cartella
+    "P-0045 Impianto Alfa" genera l'entità con chiave "P-0045 Impianto Alfa").</p>
+  </div>
+
+  <div class="campi-tipo" data-modo="prefisso">
+    <div class="riga-campi">
+      <div>
+        <label for="p_prefisso">Prefisso fisso</label>
+        <input type="text" id="p_prefisso" name="prefisso" value="{{ vp('prefisso') }}" placeholder="es. P-">
+      </div>
+      <div>
+        <label for="p_blocco1_tipo">Primo blocco: tipo di caratteri</label>
+        <select id="p_blocco1_tipo" name="blocco1_tipo">
+          {% for chiave, etichetta in classi.items() %}
+          <option value="{{ chiave }}" {% if chiave == vp('blocco1_tipo') %}selected{% endif %}>{{ etichetta }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="p_blocco1_n">Primo blocco: quanti caratteri</label>
+        <input type="number" id="p_blocco1_n" name="blocco1_n" min="1" max="30" value="{{ vp('blocco1_n') or '4' }}">
+      </div>
+    </div>
+    <div class="riga-campi">
+      <div>
+        <label for="p_separatore">Separatore <span class="facolt">(facoltativo)</span></label>
+        <input type="text" id="p_separatore" name="separatore" value="{{ vp('separatore') }}" placeholder="es. / oppure -">
+      </div>
+      <div>
+        <label for="p_blocco2_tipo">Secondo blocco: tipo <span class="facolt">(facoltativo)</span></label>
+        <select id="p_blocco2_tipo" name="blocco2_tipo">
+          {% for chiave, etichetta in classi.items() %}
+          <option value="{{ chiave }}" {% if chiave == vp('blocco2_tipo') %}selected{% endif %}>{{ etichetta }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="p_blocco2_n">Secondo blocco: quanti caratteri <span class="facolt">(0 = nessuno)</span></label>
+        <input type="number" id="p_blocco2_n" name="blocco2_n" min="0" max="30" value="{{ vp('blocco2_n') or '0' }}">
+      </div>
+    </div>
+    <p class="aiuto">Esempio: prefisso "P-" con 4 cifre estrae "P-0045" dalla
+    cartella "P-0045 Impianto Alfa". Stessa regola guidata del dizionario.</p>
+  </div>
+
+  <div class="campi-tipo" data-modo="regex">
+    <label for="p_regex">Espressione regolare</label>
+    <input type="text" id="p_regex" name="regex" value="{{ vp('regex') }}" placeholder="es. ^(P-\d{4})">
+    <p class="aiuto">Campo per utenti esperti. Se l'espressione contiene un gruppo
+    tra parentesi, la chiave è il contenuto del primo gruppo; altrimenti l'intera
+    corrispondenza.</p>
+  </div>
+
+  {% if escluse %}
+  <p class="nota-piccola">Cartelle escluse dalla generazione: {{ escluse | join(", ") }}.</p>
+  {% endif %}
+
+  <div style="margin-top:18px" class="azioni-inline">
+    <button type="submit" name="azione" value="prova" class="bottone-secondario">Prova sui nomi reali</button>
+    {% if prova is not none %}
+    <button type="submit" name="azione" value="salva">Salva e riallinea</button>
+    {% endif %}
+    <a class="bottone bottone-secondario" href="{{ url_for('catalogo.definizione') }}">Annulla</a>
+  </div>
+
+  {% if prova is not none %}
+  <h2>Prova live sui nomi reali delle cartelle</h2>
+  <p class="nota-piccola" id="riepilogo-prova">
+    {{ conteggi.ok }} chiavi estratte,
+    {{ conteggi.conflitto }} cartelle in conflitto di chiave,
+    {{ conteggi.nessuna }} cartelle senza estrazione,
+    {{ conteggi.esclusa }} escluse.
+  </p>
+  <div class="tabella-scroll">
+  <table id="tabella-prova">
+    <tr><th>Cartella (primo livello)</th><th>Chiave estratta</th><th>Esito</th></tr>
+    {% for r in prova %}
+    <tr>
+      <td class="rompi">{{ r.cartella }}</td>
+      <td>{{ r.chiave or "" }}</td>
+      <td>
+        {% if r.esito == "ok" %}<span class="badge badge-on">ok</span>
+        {% elif r.esito == "conflitto" %}<span class="badge badge-alta">conflitto: chiave duplicata</span>
+        {% elif r.esito == "esclusa" %}<span class="badge badge-off">esclusa</span>
+        {% else %}<span class="badge badge-media">nessuna estrazione</span>{% endif %}
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="3">Nessuna cartella di primo livello nell'inventario.</td></tr>
+    {% endfor %}
+  </table>
+  </div>
+  {% endif %}
+</form>
+{% endblock %}
+
+{% block script %}
+<script>
+(function () {
+  var selettore = document.getElementById("modo");
+  function applica() {
+    document.querySelectorAll(".campi-tipo[data-modo]").forEach(function (blocco) {
+      blocco.style.display = (blocco.dataset.modo === selettore.value) ? "" : "none";
+    });
+  }
+  selettore.addEventListener("change", applica);
+  applica();
+})();
+</script>
+{% endblock %}

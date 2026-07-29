@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block titolo %}Reset archivio, Wikify{% endblock %}
+{% block contenuto %}
+<h1>Reset archivio</h1>
+<div class="scheda" style="max-width:560px">
+  <p>Questa azione elimina in modo permanente tutti i dati derivati
+  dall'analisi dell'archivio: inventario, scansioni, triage, catalogo
+  (entità e importazioni) e validazioni, comprese le sessioni di analisi
+  e i file temporanei del wizard di arricchimento. Restano invariati il
+  dizionario dei pattern, l'anagrafica utenti e le impostazioni
+  (cartella archivio e parametri di analisi).</p>
+  <p class="avviso avviso-attenzione">L'operazione non è reversibile.
+  Prima di procedere, verificare di avere un'eventuale copia del database
+  se i dati sono ritenuti da conservare.</p>
+  {% if errore %}<div class="avviso avviso-errore">{{ errore }}</div>{% endif %}
+  <form method="post" action="{{ url_for('manutenzione.reset') }}">
+    <label for="conferma">Digitare RESET per confermare</label>
+    <input type="text" id="conferma" name="conferma" required
+           autocomplete="off" placeholder="RESET">
+    <label for="pin">PIN</label>
+    <input type="password" id="pin" name="pin" required inputmode="numeric"
+           pattern="[0-9]{4,6}" maxlength="6" autocomplete="off"
+           placeholder="4-6 cifre">
+    <div style="margin-top:16px">
+      <button type="submit" class="bottone-reset">Reset archivio</button>
+      <a class="bottone bottone-secondario" href="{{ url_for('home') }}">Annulla</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

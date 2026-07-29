@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% block titolo %}Scansione n. {{ scan.id }}{% endblock %}
+{% block contenuto %}
+<h1>Scansione n. {{ scan.id }}{% if scan.etichetta %}: {{ scan.etichetta }}{% endif %}</h1>
+<p><strong>Cartella:</strong> {{ scan.radice }} &nbsp; <strong>Data:</strong> {{ scan.data }}
+   &nbsp; <strong>Stato:</strong> {{ scan.stato }}
+   {% if scan.durata is not none %}&nbsp; <strong>Durata:</strong> {{ scan.durata }} s{% endif %}
+   &nbsp; <strong>Regole applicate:</strong> {{ scan.n_regole }}</p>
+
+<div class="azioni-inline" style="margin-bottom:16px">
+  <a class="bottone" href="{{ url_for('storico.export_xlsx', sid=scan.id) }}">Esporta report XLSX</a>
+  <a class="bottone bottone-secondario" href="{{ url_for('storico.lista') }}">Torna allo storico</a>
+</div>
+
+<div class="kpi-griglia">
+  <div class="kpi"><div class="numero">{{ kpi.file }}</div><div class="voce">File analizzati</div></div>
+  <div class="kpi"><div class="numero">{{ kpi.non }}</div><div class="voce">Non analizzati</div></div>
+  <div class="kpi"><div class="numero">{{ kpi.totale }}</div><div class="voce">Segnalazioni totali</div></div>
+  <div class="kpi"><div class="numero alta">{{ kpi.alta }}</div><div class="voce">Severità alta</div></div>
+  <div class="kpi"><div class="numero media">{{ kpi.media }}</div><div class="voce">Severità media</div></div>
+  <div class="kpi"><div class="numero bassa">{{ kpi.bassa }}</div><div class="voce">Severità bassa</div></div>
+</div>
+
+{% if top_categorie %}
+<p class="nota-piccola">Categorie più ricorrenti:
+{% for c in top_categorie %}{{ c.categoria }} ({{ c.n }}){% if not loop.last %}, {% endif %}{% endfor %}.</p>
+{% endif %}
+
+<h2>Consultazione per file</h2>
+<p class="nota-piccola">Le segnalazioni sono raggruppate per file: aprire un file per esaminarle e registrare in fondo la qualifica. Con Riservato o Condivisibile il file passa tra i Verificati ed esce dalla coda; con Da valutare resta in coda.</p>
+
+{# Commutatore della coda di lavoro con conteggi #}
+{% set base_args = {"sid": scan.id, "severita": f_severita, "categoria": f_categoria, "file": f_file} %}
+<div class="coda-commutatore">
+  <a class="coda-pillola {% if f_stato == 'da_fare' %}attiva{% endif %}"
+     href="{{ url_for('storico.dettaglio', stato='da_fare', **base_args) }}">Da fare ({{ conteggi.da_fare }})</a>
+  <a class="coda-pillola {% if f_stato == 'verificati' %}attiva{% endif %}"
+     href="{{ url_for('storico.dettaglio', stato='verificati', **base_args) }}">Verificati ({{ conteggi.verificati }})</a>
+  <a class="coda-pillola {% if f_stato == 'tutti' %}attiva{% endif %}"
+     href="{{ url_for('storico.dettaglio', stato='tutti', **base_args) }}">Tutti ({{ conteggi.tutti }})</a>
+</div>
+
+<form method="get" class="filtri scheda">
+  <input type="hidden" name="stato" value="{{ f_stato }}">
+  <div>
+    <label for="f-sev">Severità</label>
+    <select id="f-sev" name="severita">
+      <option value="">Tutte</option>
+      {% for s in ["alta", "media", "bassa"] %}
+      <option value="{{ s }}" {% if s == f_severita %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="f-cat">Categoria</label>
+    <select id="f-cat" name="categoria">
+      <option value="">Tutte</option>
+      {% for c in categorie %}
+      <option value="{{ c }}" {% if c == f_categoria %}selected{% endif %}>{{ c }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div style="flex:2">
+    <label for="f-file">Nome file contiene</label>
+    <input type="text" id="f-file" name="file" value="{{ f_file }}" placeholder="es. manuale">
+  </div>
+  <div>
+    <button type="submit">Filtra</button>
+    <a class="bottone bottone-secondario" href="{{ url_for('storico.dettaglio', sid=scan.id, stato=f_stato) }}">Azzera</a>
+  </div>
+</form>
+
+{% if troncate %}
+<div class="avviso avviso-errore">Considerate le prime {{ limite }} segnalazioni: restringere i filtri oppure consultare l'export XLSX completo.</div>
+{% endif %}
+
+{% for g in gruppi_file %}
+<details class="file-acc" id="{{ g.anchor }}">
+  <summary>
+    <span class="file-nome rompi">{{ g.file }}</span>
+    <span class="file-riassunto">
+      {% if g.n_alta %}<span class="badge badge-alta">alta {{ g.n_alta }}</span>{% endif %}
+      {% if g.n_media %}<span class="badge badge-media">media {{ g.n_media }}</span>{% endif %}
+      {% if g.n_bassa %}<span class="badge badge-bassa">bassa {{ g.n_bassa }}</span>{% endif %}
+      {% if g.verificato %}
+      <span class="badge badge-verificato">Verificato: {{ g.qualifica }}</span>
+      {% elif g.triage %}
+      <span class="badge badge-Da">Da valutare</span>
+      {% else %}
+      <span class="badge badge-Da">Da fare</span>
+      {% endif %}
+    </span>
+  </summary>
+  <div class="file-acc-corpo">
+    <div class="tabella-scroll">
+    <table>
+      <tr>
+        <th>Posizione</th><th>Regola</th><th>Categoria</th>
+        <th>Severità</th><th>Testo intercettato</th><th>Contesto</th>
+      </tr>
+      {% for r in g.segnalazioni %}
+      <tr>
+        <td>{{ r.s.posizione }}</td>
+        <td>{{ r.s.regola_id }}</td>
+        <td>{{ r.s.categoria }}</td>
+        <td><span class="badge badge-{{ r.s.severita }}">{{ r.s.severita }}</span></td>
+        <td><mark>{{ r.s.testo_match }}</mark></td>
+        <td class="contesto-cella">{{ r.contesto_html }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    </div>
+    <form method="post" action="{{ url_for('storico.triage', sid=scan.id) }}" class="triage-riga">
+      <input type="hidden" name="file" value="{{ g.file }}">
+      <input type="hidden" name="filtro_severita" value="{{ f_severita }}">
+      <input type="hidden" name="filtro_categoria" value="{{ f_categoria }}">
+      <input type="hidden" name="filtro_file_filtro" value="{{ f_file }}">
+      <input type="hidden" name="filtro_stato" value="{{ f_stato }}">
+      <div class="triage-campi">
+        <div class="triage-qualifica">
+          <label>Qualifica del file</label>
+          <select name="qualifica">
+            {% for q in qualifiche %}
+            <option value="{{ q }}" {% if q == g.qualifica %}selected{% endif %}>{{ q }}</option>
+            {% endfor %}
+          </select>
+          {% if g.triage %}
+          <p class="nota-piccola">Validato da {{ g.triage.validatore or "(non indicato)" }}{% if g.triage.data %} il {{ g.triage.data }}{% endif %}</p>
+          {% else %}
+          <p class="nota-piccola">Validatore e data verranno registrati con l'utente connesso.</p>
+          {% endif %}
+        </div>
+        <div class="triage-testo">
+          <label for="mot-{{ loop.index }}">Motivazione</label>
+          <textarea id="mot-{{ loop.index }}" name="motivazione" rows="3"
+                    placeholder="Motivazione della qualifica">{{ g.triage.motivazione if g.triage else "" }}</textarea>
+        </div>
+        <div class="triage-testo">
+          <label for="vin-{{ loop.index }}">Vincolo</label>
+          <textarea id="vin-{{ loop.index }}" name="vincolo" rows="3"
+                    placeholder="Vincolo applicabile (es. NDA, uso interno)">{{ g.triage.vincolo if g.triage else "" }}</textarea>
+        </div>
+        <div class="triage-azione">
+          <button type="submit">Salva triage</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</details>
+{% else %}
+<div class="scheda">
+  {% if f_stato == "da_fare" and conteggi.tutti > 0 %}
+  Coda completata: nessun file da fare con i filtri impostati. Consultare i Verificati.
+  {% elif f_stato == "verificati" %}
+  Nessun file verificato con i filtri impostati.
+  {% else %}
+  Nessuna segnalazione con i filtri impostati.
+  {% endif %}
+</div>
+{% endfor %}
+
+<h2>File analizzati</h2>
+<div class="tabella-scroll">
+<table>
+  <tr>
+    <th>File</th><th>Formato</th><th>Unità di testo</th><th>Segnalazioni</th>
+    <th>Alta</th><th>Media</th><th>Bassa</th><th>Esito</th>
+  </tr>
+  {% for f in file_analizzati %}
+  <tr>
+    <td class="rompi">{{ f.file }}</td>
+    <td>{{ f.formato }}</td>
+    <td>{{ f.unita_testo }}</td>
+    <td>{{ f.totale }}</td>
+    <td>{{ f.n_alta }}</td>
+    <td>{{ f.n_media }}</td>
+    <td>{{ f.n_bassa }}</td>
+    <td>{% if f.totale %}<strong>DA TRIAGE</strong>{% else %}nessun pattern (campionare a controllo){% endif %}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="8">Nessun file analizzato.</td></tr>
+  {% endfor %}
+</table>
+</div>
+
+<h2>File non analizzati</h2>
+<div class="tabella-scroll">
+<table>
+  <tr><th>File</th><th>Motivo</th></tr>
+  {% for f in non_analizzati %}
+  <tr><td class="rompi">{{ f.file }}</td><td>{{ f.motivo }}</td></tr>
+  {% else %}
+  <tr><td colspan="2">Tutti i file della cartella sono stati analizzati.</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}
+{% block script %}
+<script>
+// Se l'URL contiene un'ancora di un accordion, lo si apre automaticamente.
+(function () {
+  if (location.hash) {
+    var el = document.getElementById(location.hash.slice(1));
+    if (el && el.tagName === "DETAILS") { el.open = true; }
+  }
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block titolo %}Storico scansioni{% endblock %}
+{% block contenuto %}
+<h1>Storico scansioni</h1>
+<div class="testata-pagina">
+  <p>{{ scansioni|length }} scansioni registrate. Cliccare su una riga per la consultazione, il triage e l'export.</p>
+  <a class="bottone" id="bottone-nuova-scansione" href="{{ url_for('scansione.nuova') }}">Nuova scansione</a>
+</div>
+
+<div class="tabella-scroll">
+<table>
+  <tr>
+    <th>N.</th><th>Data</th><th>Etichetta</th><th>Cartella</th>
+    <th>File</th><th>Non analizzati</th>
+    <th>Alta</th><th>Media</th><th>Bassa</th>
+    <th>Avanzamento triage</th>
+    <th>Stato</th><th>Azioni</th>
+  </tr>
+  {% for s in scansioni %}
+  <tr>
+    <td>{{ s.id }}</td>
+    <td>{{ s.data }}</td>
+    <td>{{ s.etichetta or "(senza etichetta)" }}</td>
+    <td class="rompi">{{ s.radice }}</td>
+    <td>{{ s.n_file }}</td>
+    <td>{{ s.n_non }}</td>
+    <td><span class="badge badge-alta">{{ s.n_alta }}</span></td>
+    <td><span class="badge badge-media">{{ s.n_media }}</span></td>
+    <td><span class="badge badge-bassa">{{ s.n_bassa }}</span></td>
+    <td>
+      {% if s.n_da_triage %}
+      {{ s.n_verificati }}/{{ s.n_da_triage }} file verificati
+      {% if s.n_verificati >= s.n_da_triage %}<span class="badge badge-on">completo</span>{% endif %}
+      {% else %}
+      <span class="nota-piccola">nessun file da qualificare</span>
+      {% endif %}
+    </td>
+    <td>{{ s.stato }}</td>
+    <td>
+      <div class="azioni-inline">
+        <a class="bottone bottone-piccolo" href="{{ url_for('storico.dettaglio', sid=s.id) }}">Apri</a>
+        <a class="bottone bottone-secondario bottone-piccolo" href="{{ url_for('storico.export_xlsx', sid=s.id) }}">XLSX</a>
+        <form method="post" action="{{ url_for('storico.elimina', sid=s.id) }}"
+              onsubmit="return confirm('Eliminare la scansione n. {{ s.id }} con tutte le segnalazioni e il triage?');">
+          <button type="submit" class="bottone-pericolo bottone-piccolo">Elimina</button>
+        </form>
+      </div>
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="12">Nessuna scansione ancora eseguita. <a href="{{ url_for('scansione.nuova') }}">Avviare la prima scansione</a>.</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

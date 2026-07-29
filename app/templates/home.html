@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block titolo %}Dashboard, Wikify{% endblock %}
+{% block contenuto %}
+<h1>Dashboard</h1>
+
+{# ------------------------------------------------------------------ #}
+{# Impostazione della cartella archivio (una volta, modificabile poi) #}
+{# ------------------------------------------------------------------ #}
+{% if not radice_ok %}
+<div class="scheda">
+  <h2>Cartella archivio</h2>
+  {% if radice %}
+  <p class="avviso avviso-errore">La cartella impostata non risulta raggiungibile:
+  <strong>{{ radice }}</strong>. Verificare il percorso o indicarne uno nuovo.</p>
+  {% else %}
+  <p>Per iniziare, indicare il percorso radice dell'archivio documentale.
+  Verrà riusato dall'inventario e proposto in ogni nuova scansione.</p>
+  {% endif %}
+  <form method="post" action="{{ url_for('inventario.imposta_radice') }}">
+    <label for="radice">Percorso della cartella archivio</label>
+    <input type="text" id="radice" name="radice" required value="{{ radice }}"
+           placeholder="es. /Users/nome/Documenti/Archivio oppure C:\Archivio">
+    <p class="aiuto">Incollare il percorso completo della cartella. Si imposta una volta sola e resta modificabile da qui.</p>
+    <div style="margin-top:12px"><button type="submit">Salva la cartella archivio</button></div>
+  </form>
+</div>
+
+{% elif n_mappa == 0 %}
+<div class="scheda">
+  <h2>Inventario iniziale</h2>
+  <p>Cartella archivio: <strong class="rompi">{{ radice }}</strong></p>
+  <p>La mappa dell'archivio è ancora vuota. L'inventario iniziale rileva i
+  soli metadati dei file (percorso, tipo, dimensione, data di modifica):
+  nessun contenuto viene letto.</p>
+  <form method="post" action="{{ url_for('inventario.iniziale') }}">
+    <button type="submit">Esegui inventario iniziale</button>
+  </form>
+</div>
+<div class="scheda">
+  <h2>Cartella archivio</h2>
+  <form method="post" action="{{ url_for('inventario.imposta_radice') }}">
+    <label for="radice">Percorso impostato</label>
+    <input type="text" id="radice" name="radice" required value="{{ radice }}">
+    <div style="margin-top:12px"><button type="submit" class="bottone-secondario">Aggiorna il percorso</button></div>
+  </form>
+</div>
+
+{% else %}
+
+{# ------------------------------------------------------------------ #}
+{# Avvisi del check di allineamento                                    #}
+{# ------------------------------------------------------------------ #}
+{% if n_nuovi > 0 %}
+<div class="avviso avviso-attenzione">
+  <strong>{{ n_nuovi }}</strong> {{ "file nuovo non mappato" if n_nuovi == 1 else "file nuovi non mappati" }} nell'archivio.
+  <form method="post" action="{{ url_for('inventario.integra') }}" class="form-inline">
+    <button type="submit" class="bottone-piccolo">Integra nella mappa</button>
+  </form>
+</div>
+{% endif %}
+{% if n_scomparsi > 0 %}
+<div class="avviso avviso-attenzione">
+  <strong>{{ n_scomparsi }}</strong> {{ "file della mappa non risulta più presente" if n_scomparsi == 1 else "file della mappa non risultano più presenti" }} nell'archivio (stato: scomparso).
+</div>
+{% endif %}
+{% if n_da_classificare > 0 %}
+<div class="avviso avviso-attenzione">
+  <strong>{{ n_da_classificare }}</strong> {{ "file necessita" if n_da_classificare == 1 else "file necessitano" }} di scansione per la classificazione.
+  <a class="bottone bottone-piccolo" href="{{ url_for('scansione.nuova') }}">Nuova scansione</a>
+</div>
+{% endif %}
+
+{# ------------------------------------------------------------------ #}
+{# KPI dell'inventario                                                 #}
+{# ------------------------------------------------------------------ #}
+<div class="kpi-griglia">
+  <div class="kpi">
+    <div class="numero">{{ kpi.n_cartelle }}</div>
+    <div class="voce">Cartelle nel progetto (primo livello)</div>
+  </div>
+  <div class="kpi">
+    <div class="numero">{{ kpi.n_file }}</div>
+    <div class="voce">File mappati nell'inventario</div>
+  </div>
+  <div class="kpi">
+    <div class="numero {{ 'alta' if n_da_classificare > 0 else '' }}">{{ n_da_classificare }}</div>
+    <div class="voce">File da classificare</div>
+  </div>
+</div>
+
+<h2>File per cartella progetto</h2>
+<div class="tabella-scroll">
+<table id="tabella-cartelle">
+  <tr>
+    <th>Cartella</th><th>Totale file</th>
+    <th>docx</th><th>xlsx</th><th>pdf</th><th>txt</th><th>altro</th>
+  </tr>
+  {% for c in kpi.tabella %}
+  <tr>
+    <td class="rompi">{{ c.cartella }}</td>
+    <td><strong>{{ c.totale }}</strong></td>
+    <td>{{ c.docx }}</td>
+    <td>{{ c.xlsx }}</td>
+    <td>{{ c.pdf }}</td>
+    <td>{{ c.txt }}</td>
+    <td>{{ c.altro }}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="7">Nessun file presente nella mappa.</td></tr>
+  {% endfor %}
+</table>
+</div>
+
+<h2>Mappa dell'archivio</h2>
+<div class="scheda">
+  <p>Cartella archivio: <strong class="rompi">{{ radice }}</strong></p>
+  {% if ultima_esecuzione %}
+  <p class="nota-piccola">Ultimo allineamento: {{ ultima_esecuzione.data }}
+  ({{ "inventario completo" if ultima_esecuzione.tipo == "completo" else "check" }},
+  {{ ultima_esecuzione.n_totale }} file presenti in mappa).
+  Il check automatico viene eseguito all'apertura, al massimo una volta ogni 10 minuti.</p>
+  {% endif %}
+  <div class="azioni-inline">
+    <form method="post" action="{{ url_for('inventario.ricontrolla') }}">
+      <button type="submit" class="bottone-secondario">Ricontrolla ora</button>
+    </form>
+  </div>
+  <details style="margin-top:14px">
+    <summary class="nota-piccola" style="cursor:pointer">Modifica la cartella archivio</summary>
+    <form method="post" action="{{ url_for('inventario.imposta_radice') }}">
+      <label for="radice">Percorso impostato</label>
+      <input type="text" id="radice" name="radice" required value="{{ radice }}">
+      <div style="margin-top:10px"><button type="submit" class="bottone-secondario bottone-piccolo">Aggiorna il percorso</button></div>
+    </form>
+  </details>
+</div>
+{% endif %}
+
+<h2>Manutenzione</h2>
+<div class="scheda">
+  <p>Il reset elimina tutti i dati derivati dall'archivio: inventario,
+  scansioni, triage, catalogo e validazioni. Restano dizionario, utenti
+  e impostazioni.</p>
+  <a class="bottone bottone-reset" href="{{ url_for('manutenzione.reset') }}">Reset archivio</a>
+</div>
+{% endblock %}

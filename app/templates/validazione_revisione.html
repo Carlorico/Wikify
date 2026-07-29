@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block titolo %}Revisione {{ cartella }}, Wikify{% endblock %}
+{% block contenuto %}
+<div class="testata-pagina">
+  <h1>Revisione: {{ cartella }}</h1>
+  <a class="bottone bottone-secondario" href="{{ url_for('validazione.coda') }}">Torna alla coda</a>
+</div>
+
+<div class="coda-commutatore">
+  <a class="coda-pillola {{ 'attiva' if stato == 'da_fare' }}"
+     href="{{ url_for('validazione.coda_revisione', cartella=cartella, stato='da_fare') }}">Da fare ({{ conteggi.da_fare }})</a>
+  <a class="coda-pillola {{ 'attiva' if stato == 'validate' }}"
+     href="{{ url_for('validazione.coda_revisione', cartella=cartella, stato='validate') }}">Validate ({{ conteggi.validate }})</a>
+  <a class="coda-pillola {{ 'attiva' if stato == 'tutte' }}"
+     href="{{ url_for('validazione.coda_revisione', cartella=cartella, stato='tutte') }}">Tutte ({{ conteggi.tutte }})</a>
+</div>
+
+{% for scheda in schede %}
+{% set p = scheda.p %}
+<div class="scheda proposta-scheda">
+  <div class="testata-pagina">
+    <h2 class="rompi">{{ p.file }} <span class="nota-piccola">({{ p.sezione }})</span></h2>
+    <span class="badge badge-conf">confidenza {{ "%.2f" | format(p.confidenza) }}</span>
+  </div>
+  <div class="rev-griglia">
+    <div class="rev-estratto">
+      <h3>Estratto del documento</h3>
+      {% if scheda.unita %}
+        {% for u in scheda.unita %}
+        <p class="rev-unita {{ 'match' if u.match }}">
+          <span class="pos">{{ u.pos }}</span>{{ u.html }}
+        </p>
+        {% endfor %}
+      {% else %}
+        <div class="avviso avviso-attenzione">Posizione non verificabile:
+        il riferimento &laquo;{{ p.evidenza_posizione }}&raquo; non è
+        ricostruibile dal documento. Si mostra la sola citazione dichiarata
+        dall'agente.</div>
+        <p class="rev-unita match"><span class="pos">{{ p.evidenza_posizione }}</span>
+          <mark>{{ p.evidenza_citazione }}</mark></p>
+      {% endif %}
+    </div>
+    <div class="rev-proposta">
+      <h3>Proposta dell'agente</h3>
+      <table class="tabella-proposta">
+        <tr><th>Campo</th><td>{{ p.campo }}</td></tr>
+        <tr><th>Valore proposto</th><td><strong>{{ p.valore_proposto }}</strong></td></tr>
+        <tr><th>Confidenza</th><td>{{ "%.2f" | format(p.confidenza) }}</td></tr>
+        <tr><th>Evidenza</th>
+            <td class="contesto-cella">{{ p.evidenza_posizione }}:
+            &laquo;{{ p.evidenza_citazione }}&raquo;
+            {% if p.citazione_troncata %}<span class="badge badge-media">citazione troncata a 300 caratteri</span>{% endif %}</td></tr>
+      </table>
+      {% if p.esito %}
+      <p>Esito: <span class="badge badge-on">{{ esiti_label.get(p.esito, p.esito) }}</span>
+        {% if p.valore_corretto %}valore: <strong>{{ p.valore_corretto }}</strong>,{% endif %}
+        {{ p.validatore }}, {{ p.data_validazione }}
+        ({{ p.secondi_impiegati }} s){% if p.nota_validazione %},
+        nota: {{ p.nota_validazione }}{% endif %}</p>
+      {% if scheda.avvertenza %}
+      <div class="avviso avviso-attenzione">{{ avvertenza_testo }}.</div>
+      {% endif %}
+      {% endif %}
+      <form method="post" class="form-valida"
+            action="{{ url_for('validazione.coda_valida', pid=p.id) }}">
+        <input type="hidden" name="secondi" value="0">
+        <input type="hidden" name="filtro_stato" value="{{ stato }}">
+        <div class="riga-campi">
+          <div>
+            <label for="valore_corretto_{{ p.id }}">Correzione (valore dalla tassonomia)</label>
+            {% if scheda.tassonomia %}
+            <select id="valore_corretto_{{ p.id }}" name="valore_corretto">
+              <option value="">Scegliere il valore corretto</option>
+              {% for v in scheda.tassonomia %}
+              <option value="{{ v }}">{{ v }}</option>
+              {% endfor %}
+            </select>
+            {% else %}
+            <input type="text" id="valore_corretto_{{ p.id }}" name="valore_corretto"
+                   placeholder="Nome del file versione ufficiale">
+            {% endif %}
+          </div>
+          <div>
+            <label for="valore_nuovo_{{ p.id }}">Caso nuovo (valore libero)</label>
+            <input type="text" id="valore_nuovo_{{ p.id }}" name="valore_nuovo"
+                   placeholder="Valore non previsto dalla tassonomia">
+          </div>
+        </div>
+        <label for="nota_{{ p.id }}">Nota</label>
+        <input type="text" id="nota_{{ p.id }}" name="nota"
+               placeholder="Osservazioni sulla decisione (facoltative)">
+        <div class="azioni-inline" style="margin-top:10px">
+          <button type="submit" name="esito" value="confermata">Conferma</button>
+          <button type="submit" name="esito" value="corretta"
+                  class="bottone-secondario bottone">Correggi</button>
+          <button type="submit" name="esito" value="caso_nuovo"
+                  class="bottone-secondario bottone">Caso nuovo</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% else %}
+<p>Nessuna proposta in questa vista.</p>
+{% endfor %}
+
+<div class="scheda">
+  <h2>Note libere della cartella (conoscenza tacita)</h2>
+  <p class="nota-piccola">Quello che i documenti non dicono: consuetudini,
+  criteri non scritti, contesto operativo raccolto a voce. Alimenta la
+  sezione E delle schede di rilevazione.</p>
+  <form method="post" action="{{ url_for('validazione.coda_nota') }}">
+    <input type="hidden" name="cartella" value="{{ cartella }}">
+    <input type="hidden" name="lotto_id" value="{{ lotto_note or '' }}">
+    <input type="hidden" name="filtro_stato" value="{{ stato }}">
+    <label for="testo_nota">Nuova nota</label>
+    <textarea id="testo_nota" name="testo" rows="3" required></textarea>
+    <div style="margin-top:8px"><button type="submit">Registra nota</button></div>
+  </form>
+  {% if note %}
+  <table id="tabella-note">
+    <tr><th>Data</th><th>Autore</th><th>Nota</th></tr>
+    {% for n in note %}
+    <tr><td>{{ n.data }}</td><td>{{ n.autore }}</td>
+        <td class="rompi">{{ n.testo }}</td></tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+</div>
+{% endblock %}
+{% block script %}
+<script>
+(function () {
+  // Secondi impiegati: dal caricamento della proposta al submit.
+  var t0 = Date.now();
+  document.querySelectorAll("form.form-valida").forEach(function (f) {
+    f.addEventListener("submit", function () {
+      var campo = f.querySelector("input[name=secondi]");
+      if (campo) {
+        campo.value = Math.max(0, Math.round((Date.now() - t0) / 1000));
+      }
+    });
+  });
+})();
+</script>
+{% endblock %}

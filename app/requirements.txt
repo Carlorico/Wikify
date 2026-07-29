@@ -1,0 +1,4 @@
+flask>=2.0
+pyyaml>=5.4
+openpyxl>=3.0
+pypdf>=3.0

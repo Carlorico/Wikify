@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block titolo %}Elenco entità, Wikify{% endblock %}
+{% block contenuto %}
+<div class="testata-pagina">
+  <h1>Elenco entità</h1>
+  <div class="azioni-inline">
+    <a class="bottone bottone-secondario" href="{{ url_for('catalogo.definizione') }}">Definizione entità</a>
+    <a class="bottone bottone-secondario" href="{{ url_for('catalogo.export_catalogo') }}">Export catalogo XLSX</a>
+  </div>
+</div>
+
+<form method="get" class="filtri">
+  <div>
+    <label for="f-tipo">Tipo di entità</label>
+    <select id="f-tipo" name="tipo">
+      <option value="">Tutti</option>
+      {% for t in tipi %}
+      <option value="{{ t.id }}" {% if f_tipo == t.id | string %}selected{% endif %}>{{ t.nome }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="f-q">Chiave o cartella</label>
+    <input type="text" id="f-q" name="q" value="{{ f_chiave }}" placeholder="es. P-0045">
+  </div>
+  <div>
+    <label for="f-stato">Stato</label>
+    <select id="f-stato" name="stato">
+      <option value="">Tutti</option>
+      <option value="attiva" {% if f_stato == 'attiva' %}selected{% endif %}>Attive</option>
+      <option value="senza_riscontro" {% if f_stato == 'senza_riscontro' %}selected{% endif %}>Senza riscontro</option>
+    </select>
+  </div>
+  <div><button type="submit" class="bottone-secondario">Filtra</button></div>
+</form>
+
+<div class="tabella-scroll">
+<table id="tabella-entita">
+  <tr><th>Tipo</th><th>Chiave</th><th>Cartella di origine</th><th>Stato</th><th>Attributi</th><th></th></tr>
+  {% for e in righe %}
+  <tr>
+    <td>{{ e.tipo_nome }}</td>
+    <td><strong>{{ e.chiave }}</strong></td>
+    <td class="rompi">{{ e.cartella_origine }}</td>
+    <td>
+      {% if e.stato == 'attiva' %}<span class="badge badge-on">attiva</span>
+      {% else %}<span class="badge badge-media">senza riscontro</span>{% endif %}
+    </td>
+    <td>{{ e.n_attributi }}</td>
+    <td><a class="bottone bottone-secondario bottone-piccolo"
+           href="{{ url_for('catalogo.entita_scheda', eid=e.id) }}">Scheda</a></td>
+  </tr>
+  {% else %}
+  <tr><td colspan="6">Nessuna entità corrispondente ai filtri.</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

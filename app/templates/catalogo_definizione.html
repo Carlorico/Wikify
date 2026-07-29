@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block titolo %}Definizione entità, Wikify{% endblock %}
+{% block contenuto %}
+<div class="testata-pagina">
+  <h1>Catalogo, definizione entità</h1>
+  <div class="azioni-inline">
+    <a class="bottone" href="{{ url_for('catalogo.tipo_nuovo') }}">Nuovo tipo di entità</a>
+    <a class="bottone bottone-secondario" href="{{ url_for('catalogo.entita_lista') }}">Elenco entità</a>
+    <a class="bottone bottone-secondario" href="{{ url_for('catalogo.export_catalogo') }}">Export catalogo XLSX</a>
+  </div>
+</div>
+<p class="nota-piccola">Un tipo di entità (es. Progetto) genera le proprie istanze
+dalle cartelle di primo livello dell'inventario, secondo il criterio di estrazione
+della chiave. Le entità persistono: il riallineamento crea le nuove e marca
+"senza riscontro" quelle senza più cartella corrispondente, senza mai cancellare.</p>
+
+{% if n_cartelle == 0 %}
+<div class="avviso avviso-attenzione">L'inventario non contiene cartelle di primo
+livello: eseguire prima l'inventario dell'archivio dalla Dashboard.</div>
+{% endif %}
+
+{% for t in tipi %}
+<div class="scheda">
+  <div class="testata-pagina">
+    <h2 style="margin-top:0">{{ t.riga.nome }}</h2>
+    <div class="azioni-inline">
+      <form method="post" action="{{ url_for('catalogo.tipo_riallinea', tid=t.riga.id) }}">
+        <button type="submit" class="bottone-piccolo">Riallinea</button>
+      </form>
+      <a class="bottone bottone-secondario bottone-piccolo"
+         href="{{ url_for('catalogo.tipo_modifica', tid=t.riga.id) }}">Modifica criterio</a>
+      <a class="bottone bottone-secondario bottone-piccolo"
+         href="{{ url_for('catalogo.entita_lista', tipo=t.riga.id) }}">Entità del tipo</a>
+    </div>
+  </div>
+  <p class="nota-piccola">Criterio: {{ t.modo }} sulle cartelle di primo livello
+  dell'inventario. Creato il {{ t.riga.data_creazione }}.</p>
+  <div class="kpi-griglia">
+    <div class="kpi"><div class="numero">{{ t.n_attive }}</div><div class="voce">Entità attive</div></div>
+    <div class="kpi"><div class="numero {{ 'media' if t.n_orfane }}">{{ t.n_orfane }}</div><div class="voce">Senza riscontro</div></div>
+    <div class="kpi"><div class="numero {{ 'alta' if t.conteggi.conflitto }}">{{ t.conteggi.conflitto }}</div><div class="voce">Cartelle in conflitto di chiave</div></div>
+    <div class="kpi"><div class="numero {{ 'media' if t.conteggi.nessuna }}">{{ t.conteggi.nessuna }}</div><div class="voce">Cartelle senza estrazione</div></div>
+    <div class="kpi"><div class="numero">{{ t.conteggi.esclusa }}</div><div class="voce">Cartelle escluse</div></div>
+  </div>
+  {% if t.conteggi.conflitto %}
+  <p class="nota-piccola">Le cartelle in conflitto restano senza entità finché il
+  conflitto non viene risolto (escludendo una cartella o cambiando criterio):
+  eseguire "Riallinea" per il dettaglio.</p>
+  {% endif %}
+</div>
+{% else %}
+<div class="scheda">
+  <p>Nessun tipo di entità definito. Creare il primo con "Nuovo tipo di entità":
+  si sceglie il nome (es. Progetto) e il criterio con cui estrarre la chiave dal
+  nome delle cartelle, con prova live sui nomi reali prima di salvare.</p>
+</div>
+{% endfor %}
+{% endblock %}

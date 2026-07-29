@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block titolo %}Importazione {{ imp.id }}, Wikify{% endblock %}
+{% block contenuto %}
+<div class="testata-pagina">
+  <h1>Importazione n. {{ imp.id }}: {{ imp.nome_file }}</h1>
+  <div class="azioni-inline">
+    <a class="bottone bottone-secondario" href="{{ url_for('catalogo.arricchimento') }}">Torna alle importazioni</a>
+    {% if imp.stato == 'confermata' %}
+    <form method="post" action="{{ url_for('catalogo.arricchimento_rimuovi', imp_id=imp.id) }}"
+          onsubmit="return confirm('Rimuovere in blocco i valori di questa importazione? I valori identici portati da altri import restano.');">
+      <button type="submit" class="bottone-pericolo">Rimuovi importazione</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="scheda">
+  <table>
+    <tr><th style="width:220px">Data</th><td>{{ imp.data }}</td></tr>
+    <tr><th>Tipo di entità</th><td>{{ imp.tipo_nome }}</td></tr>
+    <tr><th>Utente</th><td>{{ imp.utente }}</td></tr>
+    <tr><th>Righe nel file</th><td>{{ imp.n_righe }}</td></tr>
+    <tr><th>Valori salvati</th><td>{{ imp.n_valori }}</td></tr>
+    <tr><th>Righe scartate</th><td>{{ imp.n_scartate }}</td></tr>
+    <tr><th>Stato</th><td>
+      {% if imp.stato == 'confermata' %}<span class="badge badge-on">confermata</span>
+      {% else %}<span class="badge badge-off">rimossa (valori eliminati)</span>{% endif %}
+    </td></tr>
+  </table>
+</div>
+
+<h2>Anomalie ({{ anomalie | length }})</h2>
+{% if anomalie %}
+<div class="tabella-scroll">
+<table id="tabella-anomalie">
+  <tr><th>Tipo</th><th>Riferimento</th><th>Dettaglio</th><th>Chiarimento</th></tr>
+  {% for a in anomalie %}
+  <tr>
+    <td>{{ anomalie_label.get(a.tipo, a.tipo) }}</td>
+    <td>{{ a.riferimento }}</td>
+    <td class="contesto-cella">{{ a.dettaglio }}</td>
+    <td>
+      <form method="post" action="{{ url_for('catalogo.arricchimento_anomalia_stato', aid=a.id) }}" class="chiarimento-form">
+        <select name="stato_chiarimento" aria-label="Stato chiarimento">
+          {% for s in stati %}
+          <option value="{{ s }}" {% if s == a.stato_chiarimento %}selected{% endif %}>{{ stati_label[s] }}</option>
+          {% endfor %}
+        </select>
+        <input type="text" name="nota_chiarimento" value="{{ a.nota_chiarimento }}"
+               placeholder="Nota di chiarimento" aria-label="Nota di chiarimento">
+        <button type="submit" class="bottone-secondario bottone-piccolo">Salva</button>
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+{% else %}
+<div class="scheda"><p>Nessuna anomalia registrata per questa importazione.</p></div>
+{% endif %}
+
+<h2>Valori dell'importazione ({{ valori | length }})</h2>
+<div class="tabella-scroll">
+<table id="tabella-valori-import">
+  <tr><th>Chiave entità</th><th>Attributo</th><th>Valore</th></tr>
+  {% for v in valori %}
+  <tr><td>{{ v.chiave }}</td><td>{{ v.nome_attributo }}</td><td>{{ v.valore }}</td></tr>
+  {% else %}
+  <tr><td colspan="3">Nessun valore
+  {%- if imp.stato == 'rimossa' %} (importazione rimossa){% endif %}.</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

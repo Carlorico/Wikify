@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block titolo %}Arricchimento dati, Wikify{% endblock %}
+{% block contenuto %}
+<div class="testata-pagina">
+  <h1>Catalogo, arricchimento dati</h1>
+  <a class="bottone bottone-secondario" href="{{ url_for('catalogo.arricchimento_export_anomalie') }}">Export anomalie XLSX</a>
+</div>
+<p class="nota-piccola">Caricare un file tabellare (CSV o XLSX) per agganciare
+attributi alle entità in modo deterministico: anteprima, mappatura delle colonne,
+anteprima di qualità e conferma. Ogni valore viene salvato con la provenienza e
+ogni import è rimovibile in blocco.</p>
+
+<div class="scheda">
+  <h2>Nuovo caricamento</h2>
+  {% if tipi %}
+  <form method="post" action="{{ url_for('catalogo.arricchimento_carica') }}" enctype="multipart/form-data">
+    <label for="tipo_entita">Tipo di entità di destinazione</label>
+    <select id="tipo_entita" name="tipo_entita" required>
+      <option value="">Scegliere il tipo</option>
+      {% for t in tipi %}<option value="{{ t.id }}">{{ t.nome }}</option>{% endfor %}
+    </select>
+    <label for="file_dati">File dati (.csv o .xlsx)</label>
+    <input type="file" id="file_dati" name="file_dati" accept=".csv,.xlsx,.xlsm" required>
+    <p class="aiuto">CSV con separatore virgola o punto e virgola (riconosciuto in
+    automatico), codifiche utf-8 e latin-1. La prima riga deve contenere le
+    intestazioni di colonna.</p>
+    <div style="margin-top:12px"><button type="submit">Carica e prosegui</button></div>
+  </form>
+  {% else %}
+  <p>Nessun tipo di entità definito: crearne uno nella pagina
+  <a href="{{ url_for('catalogo.definizione') }}">Definizione entità</a> prima di
+  caricare i dati.</p>
+  {% endif %}
+</div>
+
+<h2>Importazioni eseguite</h2>
+<div class="tabella-scroll">
+<table id="tabella-importazioni">
+  <tr><th>N.</th><th>Data</th><th>File</th><th>Tipo entità</th><th>Righe</th>
+      <th>Valori</th><th>Scartate</th><th>Anomalie</th><th>Utente</th>
+      <th>Stato</th><th></th></tr>
+  {% for i in importazioni %}
+  <tr>
+    <td>{{ i.id }}</td>
+    <td>{{ i.data }}</td>
+    <td class="rompi">{{ i.nome_file }}</td>
+    <td>{{ i.tipo_nome }}</td>
+    <td>{{ i.n_righe }}</td>
+    <td>{{ i.n_valori }}</td>
+    <td>{{ i.n_scartate }}</td>
+    <td>{{ i.n_anomalie }}{% if i.n_anomalie_aperte %} <span class="badge badge-media">{{ i.n_anomalie_aperte }} aperte</span>{% endif %}</td>
+    <td>{{ i.utente }}</td>
+    <td>
+      {% if i.stato == 'confermata' %}<span class="badge badge-on">confermata</span>
+      {% else %}<span class="badge badge-off">rimossa</span>{% endif %}
+    </td>
+    <td><a class="bottone bottone-secondario bottone-piccolo"
+           href="{{ url_for('catalogo.arricchimento_importazione', imp_id=i.id) }}">Dettaglio</a></td>
+  </tr>
+  {% else %}
+  <tr><td colspan="11">Nessuna importazione eseguita.</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

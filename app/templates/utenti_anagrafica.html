@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block titolo %}Anagrafica utenti{% endblock %}
+{% block contenuto %}
+<h1>Anagrafica utenti</h1>
+<p class="nota-piccola">Gli utenti attivi possono accedere con nome e PIN. Il nome dell'utente connesso viene registrato come validatore nel triage.</p>
+
+<div class="scheda">
+  <h3 style="margin-top:0">Nuovo utente</h3>
+  <form method="post" action="{{ url_for('utenti.anagrafica') }}" class="riga-campi" style="align-items:flex-end">
+    <div>
+      <label for="nu-nome">Nome e cognome</label>
+      <input type="text" id="nu-nome" name="nome" required placeholder="es. Maria Rossi">
+    </div>
+    <div>
+      <label for="nu-pin">PIN (4-6 cifre)</label>
+      <input type="password" id="nu-pin" name="pin" inputmode="numeric"
+             pattern="[0-9]{4,6}" maxlength="6" autocomplete="off" required>
+    </div>
+    <div style="flex:0">
+      <button type="submit">Crea utente</button>
+    </div>
+  </form>
+</div>
+
+<div class="tabella-scroll">
+<table>
+  <tr><th>Nome</th><th>Stato</th><th>Creato il</th><th>Azioni</th></tr>
+  {% for u in elenco %}
+  <tr>
+    <td>{{ u.nome }}{% if u.id == session.get("utente_id") %} <span class="nota-piccola">(connesso)</span>{% endif %}</td>
+    <td>{% if u.attivo %}<span class="badge badge-on">attivo</span>{% else %}<span class="badge badge-off">disattivato</span>{% endif %}</td>
+    <td>{{ u.data_creazione or "" }}</td>
+    <td>
+      <form method="post" action="{{ url_for('utenti.cambia_stato', uid=u.id) }}" style="display:inline">
+        {% if u.attivo %}
+        <button type="submit" class="bottone-pericolo bottone-piccolo"
+                {% if u.id == session.get("utente_id") %}disabled title="Utente connesso"{% endif %}>Disattiva</button>
+        {% else %}
+        <button type="submit" class="bottone-piccolo">Riattiva</button>
+        {% endif %}
+      </form>
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="4">Nessun utente in anagrafica.</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block titolo %}Coda di revisione, Wikify{% endblock %}
+{% block contenuto %}
+<div class="testata-pagina">
+  <h1>Validazione AI, coda di revisione</h1>
+</div>
+<p class="nota-piccola">Le proposte accettate all'import sono raggruppate per
+cartella progetto e ordinate per confidenza crescente: prima i casi dubbi,
+che meritano l'attenzione umana.</p>
+
+<div class="tabella-scroll">
+<table id="tabella-coda">
+  <tr><th>Cartella progetto</th><th>Proposte</th><th>Da fare</th>
+      <th>Confidenza minima in coda</th><th></th></tr>
+  {% for c in cartelle %}
+  <tr>
+    <td class="rompi">{{ c.cartella_progetto }}</td>
+    <td>{{ c.n_totali }}</td>
+    <td>{% if c.n_da_fare %}<span class="badge badge-media">{{ c.n_da_fare }}</span>
+        {% else %}<span class="badge badge-on">0</span>{% endif %}</td>
+    <td>{% if c.conf_minima is not none %}{{ "%.2f" | format(c.conf_minima) }}{% else %}completata{% endif %}</td>
+    <td><a class="bottone bottone-secondario bottone-piccolo"
+           href="{{ url_for('validazione.coda_revisione', cartella=c.cartella_progetto) }}">Rivedi</a></td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5">Nessuna proposta in coda: importare le bozze dalla
+      pagina <a href="{{ url_for('validazione.perimetro') }}">Perimetro e bozze</a>.</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block titolo %}Metriche di validazione, Wikify{% endblock %}
+{% macro blocco_metriche(m, titolo) %}
+<div class="scheda">
+  <h2>{{ titolo }}</h2>
+  {% if m.n_validate == 0 %}
+  <p class="nota-piccola">Nessuna proposta ancora validata in questo ambito.</p>
+  {% else %}
+  <h3>Accuratezza per campo (% confermate senza correzione)</h3>
+  <table class="tabella-metriche">
+    <tr><th>Campo</th><th>Validate</th><th>Confermate</th><th>Accuratezza</th></tr>
+    {% for campo, d in m.per_campo.items() %}
+    <tr><td>{{ campo }}</td><td>{{ d.n }}</td><td>{{ d.confermate }}</td>
+        <td>{% if d.accuratezza is not none %}{{ d.accuratezza }}%{% else %}n.d.{% endif %}</td></tr>
+    {% endfor %}
+  </table>
+  <h3>Accuratezza riservatezza: documento intero contro sezioni</h3>
+  <table class="tabella-metriche">
+    <tr><th>Ambito</th><th>Validate</th><th>Confermate</th><th>Accuratezza</th></tr>
+    <tr><td>Documento intero (puri)</td><td>{{ m.riservatezza.puri.n }}</td>
+        <td>{{ m.riservatezza.puri.confermate }}</td>
+        <td>{% if m.riservatezza.puri.accuratezza is not none %}{{ m.riservatezza.puri.accuratezza }}%{% else %}n.d.{% endif %}</td></tr>
+    <tr><td>Sezioni (misti)</td><td>{{ m.riservatezza.misti.n }}</td>
+        <td>{{ m.riservatezza.misti.confermate }}</td>
+        <td>{% if m.riservatezza.misti.accuratezza is not none %}{{ m.riservatezza.misti.accuratezza }}%{% else %}n.d.{% endif %}</td></tr>
+  </table>
+  <h3>Correlazione confidenza/esito per fasce</h3>
+  <table class="tabella-metriche">
+    <tr><th>Fascia di confidenza</th><th>Validate</th><th>Confermate</th><th>Accuratezza</th></tr>
+    {% for f in m.fasce %}
+    <tr><td>{{ f.fascia }}</td><td>{{ f.n }}</td><td>{{ f.confermate }}</td>
+        <td>{% if f.accuratezza is not none %}{{ f.accuratezza }}%{% else %}n.d.{% endif %}</td></tr>
+    {% endfor %}
+  </table>
+  <h3>Tempi di validazione</h3>
+  <div class="kpi-griglia">
+    <div class="kpi"><div class="numero">{{ m.tempo_mediano_proposta if m.tempo_mediano_proposta is not none else "n.d." }}</div>
+      <div class="voce">Tempo mediano per proposta (secondi)</div></div>
+    <div class="kpi"><div class="numero">{{ m.tempo_mediano_cartella if m.tempo_mediano_cartella is not none else "n.d." }}</div>
+      <div class="voce">Tempo mediano per cartella (secondi)</div></div>
+    <div class="kpi"><div class="numero">{{ m.n_validate }}</div>
+      <div class="voce">Proposte validate</div></div>
+  </div>
+  <h3>Casi nuovi ({{ m.casi_nuovi | length }})</h3>
+  {% if m.casi_nuovi %}
+  <div class="tabella-scroll">
+  <table class="tabella-metriche">
+    <tr><th>Cartella</th><th>File</th><th>Campo</th><th>Valore proposto</th>
+        <th>Caso nuovo</th><th>Nota</th></tr>
+    {% for r in m.casi_nuovi %}
+    <tr><td>{{ r.cartella_progetto }}</td><td class="rompi">{{ r.file }}</td>
+        <td>{{ r.campo }}</td><td>{{ r.valore_proposto }}</td>
+        <td><strong>{{ r.valore_corretto }}</strong></td>
+        <td class="contesto-cella">{{ r.nota_val }}</td></tr>
+    {% endfor %}
+  </table>
+  </div>
+  {% else %}
+  <p class="nota-piccola">Nessun caso nuovo segnalato.</p>
+  {% endif %}
+  {% endif %}
+</div>
+{% endmacro %}
+{% block contenuto %}
+<div class="testata-pagina">
+  <h1>Validazione AI, metriche</h1>
+  <div class="azioni-inline">
+    <a class="bottone bottone-secondario"
+       href="{{ url_for('validazione.metriche_export_xlsx', lotto=(lotto.id if lotto else None)) }}">Export metriche XLSX</a>
+    <a class="bottone bottone-secondario"
+       href="{{ url_for('validazione.metriche_export_json', lotto=(lotto.id if lotto else None)) }}">Export correzioni JSON</a>
+  </div>
+</div>
+<p class="nota-piccola">Le metriche stimano l'affidabilità della pipeline di
+classificazione a partire dagli esiti della revisione umana. L'export JSON
+delle correzioni alimenta il raffinamento dei prompt dell'agente.</p>
+
+<div class="scheda">
+  <h2>Sessioni di analisi</h2>
+  <p class="nota-piccola">Ogni sessione e' aperta dal connettore MCP
+  (strumento <code>ottieni_incarico</code>) secondo le impostazioni di
+  analisi correnti. I KPI stimano l'esito e il costo dell'analisi
+  dell'agente, prima della revisione umana.</p>
+  {% if kpi_sessioni %}
+  <div class="tabella-scroll">
+  <table class="tabella-metriche">
+    <tr>
+      <th>Sessione</th><th>Avvio</th><th>Ambito</th>
+      <th>Progetti assegnati/completati</th>
+      <th>File perimetro/letti</th>
+      <th>Proposte per campo</th>
+      <th>Scarti per motivo</th>
+      <th>Durata (s)</th>
+      <th>Token stimati</th>
+      <th>Costo stimato (€)</th>
+      <th>Stato</th>
+    </tr>
+    {% for k in kpi_sessioni %}
+    <tr>
+      <td>{{ k.sessione.id }}</td>
+      <td>{{ k.sessione.data_avvio }}</td>
+      <td>{{ k.sessione.ambito }}</td>
+      <td>{{ k.n_progetti_completati }}/{{ k.n_progetti_assegnati }}</td>
+      <td>{{ k.n_file_letti }}/{{ k.n_file_perimetro }}</td>
+      <td class="contesto-cella">
+        {% for campo, n in k.proposte_per_campo.items() %}{% if n %}{{ campo }}: {{ n }}<br>{% endif %}{% endfor %}
+      </td>
+      <td class="contesto-cella">
+        {% for motivo, n in k.scarti_per_motivo.items() %}{{ motivi_label.get(motivo, motivo) }}: {{ n }}<br>{% endfor %}
+      </td>
+      <td>{{ k.durata_secondi if k.durata_secondi is not none else "n.d." }}</td>
+      <td>{{ k.token_stimati }}</td>
+      <td>{{ k.costo_stimato if k.costo_stimato is not none else "n.d." }}</td>
+      <td>{{ k.sessione.stato }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+  {% else %}
+  <p class="nota-piccola">Nessuna sessione di analisi ancora avviata dal
+  connettore MCP.</p>
+  {% endif %}
+</div>
+
+{% if sessioni %}
+<form method="get" action="{{ url_for('validazione.metriche') }}" class="filtri">
+  <div>
+    <label for="sessione">Accuratezza di una sessione specifica</label>
+    <select id="sessione" name="sessione" onchange="this.form.submit()">
+      <option value="">Nessun filtro per sessione</option>
+      {% for s in sessioni %}
+      <option value="{{ s.id }}" {% if sessione_sel and s.id == sessione_sel.id %}selected{% endif %}>
+        Sessione {{ s.id }}: {{ s.data_avvio }} ({{ s.ambito }})
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+  <noscript><div><button type="submit">Aggiorna</button></div></noscript>
+</form>
+{% endif %}
+
+{% if del_sessione %}
+{{ blocco_metriche(del_sessione, "Metriche della sessione %d" | format(sessione_sel.id)) }}
+{% endif %}
+
+{% if lotti %}
+<form method="get" action="{{ url_for('validazione.metriche') }}" class="filtri">
+  <div>
+    <label for="lotto">Metriche di un lotto specifico</label>
+    <select id="lotto" name="lotto" onchange="this.form.submit()">
+      <option value="">Solo complessive</option>
+      {% for l in lotti %}
+      <option value="{{ l.id }}" {% if lotto and l.id == lotto.id %}selected{% endif %}>
+        Lotto {{ l.id }}: {{ l.nome_file_origine }} ({{ l.cartella_progetto }})
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+  <noscript><div><button type="submit">Aggiorna</button></div></noscript>
+</form>
+{% endif %}
+
+{% if del_lotto %}
+{{ blocco_metriche(del_lotto, "Metriche del lotto %d (%s)" | format(lotto.id, lotto.nome_file_origine)) }}
+{% endif %}
+{{ blocco_metriche(complessive, "Metriche complessive") }}
+{% endblock %}

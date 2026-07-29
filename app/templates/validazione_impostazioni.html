@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block titolo %}Impostazioni analisi, Wikify{% endblock %}
+{% block contenuto %}
+<h1>Impostazioni analisi</h1>
+<p class="nota-piccola">Guidano l'agente di rilevazione collegato tramite il
+connettore MCP: modelli in cascata, ambito dell'analisi (campione o
+archivio intero) e prezzi indicativi per la stima dei costi nei KPI delle
+sessioni. Sono lette anche dallo strumento <code>ottieni_istruzioni</code>
+del server MCP.</p>
+
+<form method="post" class="scheda">
+  <h2>Modelli in cascata</h2>
+  <div class="riga-campi">
+    <div>
+      <label for="modello_primario">Modello primario</label>
+      <input type="text" id="modello_primario" name="modello_primario"
+             list="lista_modelli"
+             value="{{ impostazioni.modello_primario }}">
+    </div>
+    <div>
+      <label for="modello_rinforzo">Modello di rinforzo</label>
+      <input type="text" id="modello_rinforzo" name="modello_rinforzo"
+             list="lista_modelli"
+             value="{{ impostazioni.modello_rinforzo }}">
+    </div>
+    <div>
+      <label for="soglia_rinforzo">Soglia di confidenza per il rinforzo (0-1)</label>
+      <input type="number" id="soglia_rinforzo" name="soglia_rinforzo"
+             min="0" max="1" step="0.05"
+             value="{{ impostazioni.soglia_rinforzo }}">
+    </div>
+  </div>
+  <datalist id="lista_modelli">
+    {% for m in modelli_suggeriti %}
+    <option value="{{ m }}">
+    {% endfor %}
+  </datalist>
+  <p>
+    <label style="display:inline-flex; align-items:center; gap:6px; margin-top:8px;">
+      <input type="checkbox" name="rinforzo_obbligatorio"
+             {% if impostazioni.rinforzo_obbligatorio %}checked{% endif %}>
+      Rinforzo obbligatorio sulle proposte di riservatezza "riservato" o "misto"
+    </label>
+  </p>
+
+  <h2>Ambito dell'analisi</h2>
+  <div class="riga-campi">
+    <div>
+      <label><input type="radio" name="ambito" value="campione"
+             {% if impostazioni.ambito == 'campione' %}checked{% endif %}>
+             Campione</label><br>
+      <label><input type="radio" name="ambito" value="archivio_intero"
+             {% if impostazioni.ambito == 'archivio_intero' %}checked{% endif %}>
+             Archivio intero</label>
+    </div>
+    <div>
+      <label for="campione_n">Numero di progetti del campione</label>
+      <input type="number" id="campione_n" name="campione_n" min="1"
+             value="{{ impostazioni.campione_n }}">
+    </div>
+    <div>
+      <label for="campione_seed">Seed della selezione casuale
+        <span class="facolt">(riproducibile: lasciare vuoto per rigenerarlo)</span></label>
+      <input type="number" id="campione_seed" name="campione_seed"
+             value="{{ impostazioni.campione_seed }}">
+    </div>
+  </div>
+  <p class="aiuto">Il campione seleziona in modo casuale e riproducibile,
+  tramite il seed, un numero di cartelle progetto tra quelle con almeno un
+  file condivisibile nell'ultima scansione completata. Con "archivio
+  intero" la sessione assegna tutte le cartelle idonee.</p>
+
+  <h2>Prezzi indicativi per modello (euro per milione di token)</h2>
+  <p class="aiuto">Usati per la stima dei costi nei KPI delle sessioni di
+  analisi. Tabella modificabile: aggiungere righe per nuovi modelli.</p>
+  <div class="tabella-scroll">
+  <table id="tabella-prezzi">
+    <tr><th>Modello</th><th>Euro / milione token input</th>
+        <th>Euro / milione token output</th><th></th></tr>
+    <tbody id="corpo-prezzi">
+    {% for p in impostazioni.prezzi %}
+    <tr>
+      <td><input type="text" name="prezzo_modello_{{ loop.index0 }}"
+                 list="lista_modelli" value="{{ p.modello }}"></td>
+      <td><input type="number" step="0.01" min="0"
+                 name="prezzo_in_{{ loop.index0 }}" value="{{ p.prezzo_in }}"></td>
+      <td><input type="number" step="0.01" min="0"
+                 name="prezzo_out_{{ loop.index0 }}" value="{{ p.prezzo_out }}"></td>
+      <td><button type="button" class="bottone-secondario rimuovi-riga-prezzo">Rimuovi</button></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <button type="button" id="aggiungi-riga-prezzo" class="bottone-secondario">Aggiungi modello</button>
+
+  <div class="azioni-inline" style="margin-top:18px">
+    <button type="submit" class="bottone">Salva impostazioni</button>
+  </div>
+</form>
+{% endblock %}
+
+{% block script %}
+<script>
+(function () {
+  var corpo = document.getElementById("corpo-prezzi");
+  var pulsante = document.getElementById("aggiungi-riga-prezzo");
+  function indiceSuccessivo() {
+    return corpo.querySelectorAll("tr").length;
+  }
+  function rigaHtml(indice) {
+    return "<tr>" +
+      "<td><input type=\"text\" name=\"prezzo_modello_" + indice + "\" list=\"lista_modelli\"></td>" +
+      "<td><input type=\"number\" step=\"0.01\" min=\"0\" name=\"prezzo_in_" + indice + "\" value=\"0\"></td>" +
+      "<td><input type=\"number\" step=\"0.01\" min=\"0\" name=\"prezzo_out_" + indice + "\" value=\"0\"></td>" +
+      "<td><button type=\"button\" class=\"bottone-secondario rimuovi-riga-prezzo\">Rimuovi</button></td>" +
+      "</tr>";
+  }
+  function agganciaRimozione(riga) {
+    var bottone = riga.querySelector(".rimuovi-riga-prezzo");
+    if (bottone) {
+      bottone.addEventListener("click", function () { riga.remove(); });
+    }
+  }
+  corpo.querySelectorAll("tr").forEach(agganciaRimozione);
+  pulsante.addEventListener("click", function () {
+    var div = document.createElement("tbody");
+    div.innerHTML = rigaHtml(indiceSuccessivo());
+    var riga = div.firstElementChild;
+    corpo.appendChild(riga);
+    agganciaRimozione(riga);
+  });
+})();
+</script>
+{% endblock %}

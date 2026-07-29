@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block titolo %}Lotto {{ lotto.id }}, Wikify{% endblock %}
+{% block contenuto %}
+<div class="testata-pagina">
+  <h1>Lotto {{ lotto.id }}: {{ lotto.nome_file_origine }}</h1>
+  <a class="bottone bottone-secondario" href="{{ url_for('validazione.perimetro') }}">Torna a perimetro e bozze</a>
+</div>
+
+<div class="kpi-griglia">
+  <div class="kpi"><div class="numero">{{ lotto.n_accettate }}</div>
+    <div class="voce">Proposte accettate</div></div>
+  <div class="kpi"><div class="numero {% if lotto.n_scartate %}media{% endif %}">{{ lotto.n_scartate }}</div>
+    <div class="voce">Proposte scartate</div></div>
+  <div class="kpi"><div class="numero">{{ lotto.n_troncate }}</div>
+    <div class="voce">Citazioni troncate</div></div>
+  <div class="kpi"><div class="numero">{{ n_validate }}/{{ lotto.n_accettate }}</div>
+    <div class="voce">Avanzamento validazione</div></div>
+</div>
+
+<div class="scheda">
+  <h2>Riepilogo import</h2>
+  <p>Importato il {{ lotto.data_import }}, formato {{ lotto.formato }},
+  cartella progetto <strong>{{ lotto.cartella_progetto }}</strong>{% if lotto.chiave_entita %},
+  chiave entità <strong>{{ lotto.chiave_entita }}</strong>{% endif %}.
+  Stato: {{ lotto.stato }}.</p>
+  {% if dettaglio.conteggi %}
+  <h3>Scarti per motivo</h3>
+  <table id="tabella-scarti">
+    <tr><th>Motivo</th><th>N.</th></tr>
+    {% for motivo, n in dettaglio.conteggi.items() %}
+    <tr><td>{{ motivi_label.get(motivo, motivo) }}</td><td>{{ n }}</td></tr>
+    {% endfor %}
+  </table>
+  {% if dettaglio.dettagli %}
+  <details>
+    <summary>Dettaglio delle proposte scartate</summary>
+    <table>
+      <tr><th>N. proposta nel file</th><th>Riferimento</th><th>Motivo</th></tr>
+      {% for d in dettaglio.dettagli %}
+      <tr><td>{{ d.indice }}</td><td class="rompi">{{ d.riferimento }}</td>
+          <td>{{ motivi_label.get(d.motivo, d.motivo) }}</td></tr>
+      {% endfor %}
+    </table>
+  </details>
+  {% endif %}
+  {% else %}
+  <p class="nota-piccola">Nessuna proposta scartata.</p>
+  {% endif %}
+  {% if note_agente %}
+  <h3>Note dell'agente</h3>
+  <ul>{% for n in note_agente %}<li>{{ n }}</li>{% endfor %}</ul>
+  {% endif %}
+</div>
+
+<h2>Proposte del lotto (per confidenza crescente)</h2>
+<div class="tabella-scroll">
+<table id="tabella-proposte">
+  <tr><th>File</th><th>Sezione</th><th>Campo</th><th>Valore proposto</th>
+      <th>Confidenza</th><th>Evidenza</th><th>Stato</th></tr>
+  {% for p in proposte %}
+  <tr>
+    <td class="rompi">{{ p.file }}</td>
+    <td>{{ p.sezione }}</td>
+    <td>{{ p.campo }}</td>
+    <td>{{ p.valore_proposto }}</td>
+    <td>{{ "%.2f" | format(p.confidenza) }}</td>
+    <td class="contesto-cella rompi">{{ p.evidenza_posizione }}:
+      &laquo;{{ p.evidenza_citazione }}&raquo;{% if p.citazione_troncata %}
+      <span class="badge badge-media">troncata</span>{% endif %}</td>
+    <td>
+      {% if p.esito %}<span class="badge badge-on">{{ esiti_label.get(p.esito, p.esito) }}</span>
+      <span class="nota-piccola">{{ p.validatore }}, {{ p.data_validazione }}</span>
+      {% else %}<span class="badge badge-off">da validare</span>{% endif %}
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="7">Nessuna proposta accettata in questo lotto.</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% if lotto.cartella_progetto %}
+<p><a class="bottone" href="{{ url_for('validazione.coda_revisione', cartella=lotto.cartella_progetto) }}">Apri la revisione della cartella</a></p>
+{% endif %}
+{% endblock %}

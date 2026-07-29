@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block titolo %}Benvenuto{% endblock %}
+{% block contenuto %}
+<div class="accesso-riquadro scheda">
+  <h1>Benvenuto in Wikify</h1>
+  <p>Non risulta ancora alcun utente: per iniziare occorre creare il primo profilo.
+     Il nome comparirà come validatore nel registro di segregazione; il PIN
+     (numerico, da 4 a 6 cifre) servirà per gli accessi successivi.</p>
+  {% if errore %}<div class="avviso avviso-errore">{{ errore }}</div>{% endif %}
+  <form method="post" action="{{ url_for('utenti.crea_primo') }}">
+    <label for="pr-nome">Nome e cognome</label>
+    <input type="text" id="pr-nome" name="nome" required placeholder="es. Carlo Verdini">
+    <label for="pr-pin">PIN</label>
+    <input type="password" id="pr-pin" name="pin" inputmode="numeric"
+           pattern="[0-9]{4,6}" maxlength="6" autocomplete="off" required
+           placeholder="4-6 cifre">
+    <p style="margin-top:16px"><button type="submit">Crea il primo utente ed entra</button></p>
+  </form>
+</div>
+{% endblock %}

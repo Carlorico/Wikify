@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block titolo %}Accesso{% endblock %}
+{% block contenuto %}
+<div class="accesso-riquadro scheda">
+  <h1>Accesso</h1>
+  <p class="nota-piccola">Selezionare il proprio nome e inserire il PIN per iniziare a lavorare.</p>
+  {% if errore %}<div class="avviso avviso-errore">{{ errore }}</div>{% endif %}
+  <form method="post" action="{{ url_for('utenti.accesso') }}">
+    <label for="acc-utente">Utente</label>
+    <select id="acc-utente" name="utente" required>
+      {% for u in attivi %}
+      <option value="{{ u.id }}">{{ u.nome }}</option>
+      {% endfor %}
+    </select>
+    <label for="acc-pin">PIN</label>
+    <input type="password" id="acc-pin" name="pin" inputmode="numeric"
+           pattern="[0-9]{4,6}" maxlength="6" autocomplete="off" required
+           placeholder="4-6 cifre">
+    <p style="margin-top:16px"><button type="submit">Entra</button></p>
+  </form>
+</div>
+{% endblock %}

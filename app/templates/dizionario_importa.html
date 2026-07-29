@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block titolo %}Importa dizionario YAML{% endblock %}
+{% block contenuto %}
+<h1>Importa dizionario YAML</h1>
+<div class="scheda">
+  <p>Caricare un file YAML con la struttura dello scanner CLI (sezione <code>regole:</code> con id, categoria, descrizione, pattern, severita, note).</p>
+  <p class="nota-piccola">Le regole con codice già presente vengono aggiornate; le altre vengono aggiunte come nuove (tipo: espressione regolare avanzata). Le voci con pattern non valido vengono scartate e conteggiate.</p>
+  <form method="post" enctype="multipart/form-data">
+    <label for="file_yaml">File YAML</label>
+    <input type="file" id="file_yaml" name="file_yaml" accept=".yaml,.yml" required>
+    <div style="margin-top:16px">
+      <button type="submit">Importa</button>
+      <a class="bottone bottone-secondario" href="{{ url_for('dizionario.lista') }}">Annulla</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

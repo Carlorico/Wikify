@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block titolo %}Nuova scansione{% endblock %}
+{% block contenuto %}
+<h1>Nuova scansione</h1>
+<div class="scheda">
+  <p>Regole attive nel dizionario: <strong>{{ n_attive }}</strong>.
+  {% if n_attive == 0 %}<span style="color:#92321f">Attivarne almeno una prima di avviare la scansione.</span>{% endif %}</p>
+  <form method="post" action="{{ url_for('scansione.avvia') }}">
+    <label for="percorso">Cartella da scansionare</label>
+    <input type="text" id="percorso" name="percorso" required value="{{ percorso }}"
+           placeholder="es. /Users/nome/Documenti/Archivio oppure C:\Archivio">
+    <p class="aiuto">Incollare il percorso completo della cartella. Su Mac si può trascinare la cartella nella finestra del Terminale per ottenerlo; su Windows copiarlo dalla barra degli indirizzi di Esplora file.</p>
+
+    <div class="riga-campi">
+      <div>
+        <label for="etichetta">Etichetta della scansione <span class="facolt">(facoltativa)</span></label>
+        <input type="text" id="etichetta" name="etichetta" value="{{ etichetta }}"
+               placeholder="es. Archivio commerciale, primo passaggio">
+      </div>
+      <div>
+        <label for="contesto">Caratteri di contesto</label>
+        <input type="number" id="contesto" name="contesto" min="20" max="400" value="{{ contesto }}">
+        <p class="aiuto">Quanti caratteri mostrare attorno a ogni corrispondenza (predefinito 80).</p>
+      </div>
+    </div>
+
+    <div style="margin-top:16px">
+      <button type="submit" {% if n_attive == 0 %}disabled{% endif %}>Avvia la scansione</button>
+    </div>
+  </form>
+</div>
+<p class="nota-piccola">La scansione legge docx, xlsx, xlsm, pdf, txt, csv, md, log, ini, cfg, json e xml. I formati legacy (doc, xls, ppt) e i PDF senza testo vengono elencati tra i file non analizzati con il motivo.</p>
+{% endblock %}

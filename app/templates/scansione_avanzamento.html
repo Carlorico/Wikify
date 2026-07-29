@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block titolo %}Scansione in corso{% endblock %}
+{% block contenuto %}
+<h1>Scansione n. {{ scan.id }}{% if scan.etichetta %}: {{ scan.etichetta }}{% endif %}</h1>
+<div class="scheda">
+  <p><strong>Cartella:</strong> {{ scan.radice }}<br>
+     <strong>Avviata:</strong> {{ scan.data }} con {{ scan.n_regole }} regole attive</p>
+  <div class="progresso-fuori"><div class="progresso-dentro" id="barra">0%</div></div>
+  <p class="file-corrente" id="file-corrente">Preparazione in corso...</p>
+  <p id="stato-testo" class="nota-piccola"></p>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+const URL_STATO = "{{ url_for('scansione.stato', sid=scan.id) }}";
+const URL_DETTAGLIO = "{{ url_for('storico.dettaglio', sid=scan.id) }}";
+
+async function aggiorna() {
+  try {
+    const r = await fetch(URL_STATO);
+    const d = await r.json();
+    const barra = document.getElementById("barra");
+    const perc = d.totali > 0 ? Math.round(100 * d.processati / d.totali) : 0;
+    barra.style.width = perc + "%";
+    barra.textContent = perc + "%";
+    document.getElementById("file-corrente").textContent =
+      d.corrente ? ("File in analisi: " + d.corrente) :
+      (d.stato === "in corso" ? "Conteggio dei file in corso..." : "");
+    document.getElementById("stato-testo").textContent =
+      "File processati: " + d.processati + " su " + d.totali + " (stato: " + d.stato + ")";
+    if (d.stato === "completata") {
+      barra.style.width = "100%";
+      barra.textContent = "100%";
+      window.location = URL_DETTAGLIO;
+      return;
+    }
+    if (d.stato === "errore" || d.stato === "interrotta") {
+      document.getElementById("stato-testo").textContent =
+        "La scansione si è fermata (" + d.stato + "). " + (d.errore || "");
+      return;
+    }
+  } catch (e) { /* nuovo tentativo al prossimo giro */ }
+  setTimeout(aggiorna, 800);
+}
+aggiorna();
+</script>
+{% endblock %}
