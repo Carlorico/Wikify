@@ -4,8 +4,8 @@
 
 Wikify è un'applicazione locale che prende un archivio documentale disordinato e lo porta
 allo stato di **archivio logico**: ogni documento riconducibile a un'entità del dominio,
-con una tipologia dichiarata e un livello di riservatezza qualificato. È il presupposto —
-oggi quasi sempre mancante — di qualunque sistema di consultazione intelligente.
+con una tipologia dichiarata e un livello di riservatezza qualificato. È il presupposto,
+oggi quasi sempre mancante, di qualunque sistema di consultazione intelligente.
 
 Tutta l'elaborazione avviene sul computer di chi la esegue: nessun contenuto dell'archivio
 lascia la macchina.
@@ -21,11 +21,11 @@ tecnico, ma serve continuamente all'ufficio commerciale, che non avendo la compe
 consultarlo passa dai referenti tecnici. Ne deriva un collo di bottiglia: onere ricorrente
 da una parte, attesa dall'altra.
 
-La richiesta arriva di norma già tradotta in soluzione — "serve un motore di ricerca",
+La richiesta arriva di norma già tradotta in soluzione: "serve un motore di ricerca",
 "serve un'AI che risponda alle domande". L'ipotesi da cui parte questo progetto è diversa:
 il problema non è la mancanza di uno strumento di ricerca, ma il fatto che
 **l'informazione non è mai stata razionalizzata**. Finché non si sa che cosa contengono i
-documenti, qualunque motore cerca nel disordine — e nessuno può dire quali contenuti siano
+documenti, qualunque motore cerca nel disordine, e nessuno può dire quali contenuti siano
 esponibili a un servizio esterno.
 
 ## Come si legge questo progetto
@@ -61,17 +61,17 @@ consegna.
 
 Cinque moduli funzionali, in sequenza di dipendenza:
 
-1. **Inventario e dashboard** — la mappa permanente dell'archivio, mantenuta a livello di
+1. **Inventario e dashboard**: la mappa permanente dell'archivio, mantenuta a livello di
    filesystem e riallineata a ogni apertura. Nessun contenuto viene letto.
-2. **Classificazione base** — il dizionario dei pattern con costruzione guidata senza
+2. **Classificazione base**: il dizionario dei pattern con costruzione guidata senza
    espressioni regolari, la scansione deterministica dei contenuti e il triage per file,
    organizzato come coda di lavoro.
-3. **Catalogo** — le entità logiche generate da un criterio e l'arricchimento da fonti
+3. **Catalogo**: le entità logiche generate da un criterio e l'arricchimento da fonti
    tabellari esterne, con relazione uno-a-molti nativa e provenienza di ogni valore.
-4. **Validazione AI** — il perimetro condivisibile, l'import severo delle bozze prodotte
+4. **Validazione AI**: il perimetro condivisibile, l'import severo delle bozze prodotte
    dall'agente, la coda di revisione ordinata per confidenza crescente, le metriche di
    affidabilità e il connettore MCP che impone il perimetro lato server.
-5. **Archivio logico** — il consolidamento che rende il documento un oggetto di prima
+5. **Archivio logico**: il consolidamento che rende il documento un oggetto di prima
    classe: tipologia, aggancio all'entità, riservatezza, e l'export che costituisce la
    consegna verso la fase successiva.
 
@@ -96,8 +96,8 @@ completa, pensata per chi non ha familiarità con il terminale, è nei documenti
 
 ## Dove risiedono i dati
 
-I dati di lavoro — la base dati con inventario, esiti di scansione, triage, catalogo e
-validazioni, la chiave di sessione, i file temporanei di import — **non stanno in questa
+I dati di lavoro (la base dati con inventario, esiti di scansione, triage, catalogo e
+validazioni, la chiave di sessione, i file temporanei di import) **non stanno in questa
 cartella**. Risiedono in `Wikify_dati`, cartella sorella, indicata dalla variabile
 d'ambiente `ARCHIVIO_SMART_DATA` e valorizzata dagli script di avvio:
 
@@ -132,8 +132,8 @@ condivide. Per ottenere il pacchetto da consegnare:
 strumenti/prepara_condivisione.sh
 ```
 
-Lo script produce una copia completa e funzionante del progetto — documentazione,
-applicazione, scanner, contratto dell'agente, identità visuale — **escludendo** il
+Lo script produce una copia completa e funzionante del progetto (documentazione,
+applicazione, scanner, contratto dell'agente, identità visuale) **escludendo** il
 materiale interno, i dati di lavoro e le scorie tecniche. Il dettaglio di ciò che viene
 escluso è dichiarato nello script stesso.
 

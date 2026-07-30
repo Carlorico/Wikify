@@ -1,4 +1,4 @@
-# Formato bozze agente — versione 1.0 (congelato il 26/07/2026)
+# Formato bozze agente: versione 1.0 (congelato il 26/07/2026)
 
 Contratto di scambio tra l'agente di rilevazione (Claude / Claude Code) e il modulo Validazione AI dell'app Wikify. Un file JSON per cartella progetto esaminata. L'app rifiuta all'import ogni proposta priva di evidenza.
 

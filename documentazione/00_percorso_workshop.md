@@ -15,7 +15,7 @@ parte della dimostrazione consiste nel vedere che l'elaborazione avviene in loca
 
 ---
 
-## Segmento 1 — La cartella di progetto (~10')
+## Segmento 1: La cartella di progetto (~10')
 
 **Cosa mostrare**: la radice del progetto e il [README](../README.md).
 
@@ -28,9 +28,9 @@ dell'archivio analizzato.
 > **Domanda all'aula**: aprendo la cartella di un progetto vostro, quanto tempo servirebbe a
 > un collega per capire da dove iniziare?
 
-## Segmento 2 — Il problema e le domande (~15')
+## Segmento 2: Il problema e le domande (~15')
 
-**Cosa mostrare**: documento [01 — Contesto e problema](01_contesto_e_problema.md).
+**Cosa mostrare**: documento [01: Contesto e problema](01_contesto_e_problema.md).
 
 Il dominio, il collo di bottiglia fra ufficio tecnico e ufficio commerciale, e la richiesta
 arrivata già formulata come soluzione. Il passaggio da valorizzare è la riformulazione:
@@ -38,16 +38,16 @@ dalla richiesta di uno strumento alle domande che l'archivio deve reggere, disti
 esatte, esplorative e di confronto.
 
 > **Micro-decisione**: di fronte a una richiesta già formulata come soluzione, da dove
-> conviene partire — dalla tecnologia richiesta o dalle domande a cui si deve rispondere?
+> conviene partire: dalla tecnologia richiesta o dalle domande a cui si deve rispondere?
 > Raccogliere due o tre posizioni prima di proseguire.
 
 Chi sostiene che convenga assecondare la richiesta ha un argomento legittimo, da
 valorizzare: la differenza non è fra accogliere e respingere, ma fra **accogliere** ed
 **eseguire alla lettera**.
 
-## Segmento 3 — I requisiti e l'architettura (~20')
+## Segmento 3: I requisiti e l'architettura (~20')
 
-**Cosa mostrare**: documento [02 — Requisiti e architettura](02_requisiti_e_architettura.md).
+**Cosa mostrare**: documento [02: Requisiti e architettura](02_requisiti_e_architettura.md).
 
 Le tre dimensioni da tenere separate, come il tipo di domanda cambia l'architettura, i
 volumi e ciò che implicano. Il punto centrale è il requisito dei permessi **per
@@ -62,9 +62,9 @@ alternativo.
 > risolvere la maggior parte delle richieste che arrivano oggi? Far notare quanto spesso la
 > risposta sia il primo livello, e quanto raramente venga proposto.
 
-## Segmento 4 — La decisione sulla riservatezza (~15')
+## Segmento 4: La decisione sulla riservatezza (~15')
 
-**Cosa mostrare**: documento [03 — Riservatezza: metodo A e metodo B](03_riservatezza_metodo_A_B.md).
+**Cosa mostrare**: documento [03: Riservatezza: metodo A e metodo B](03_riservatezza_metodo_A_B.md).
 
 È il segmento che gli allievi con responsabilità organizzative ricordano più a lungo, e
 merita respiro anche a costo di comprimere il precedente. La domanda "possiamo esporre
@@ -77,9 +77,9 @@ Il principio da estrarre, valido oltre questo progetto: **i vincoli si impongono
 raccomandano**. Nel connettore, il perimetro non è una regola scritta nelle istruzioni
 dell'agente: è il server che rifiuta la lettura dei file fuori perimetro.
 
-## Segmento 5 — La progettazione e il codice (~15')
+## Segmento 5: La progettazione e il codice (~15')
 
-**Cosa mostrare**: documento [04 — Progettazione dei moduli](04_progettazione_moduli.md) e la
+**Cosa mostrare**: documento [04: Progettazione dei moduli](04_progettazione_moduli.md) e la
 cartella [app/](../app/).
 
 Non si legge il codice: si mostra come è organizzato e perché. Il nucleo condiviso, un
@@ -91,7 +91,7 @@ scrivere espressioni regolari. Chi conosce il dominio non conosce le espressioni
 lo strumento era inutilizzabile proprio da chi avrebbe dovuto usarlo. Da qui la costruzione
 guidata con prova live.
 
-## Segmento 6 — La dimostrazione (~30')
+## Segmento 6: La dimostrazione (~30')
 
 **Cosa mostrare**: l'applicazione in esecuzione sull'archivio di prova.
 
@@ -112,9 +112,9 @@ Se il tempo stringe, sacrificare la creazione delle regole e mostrarne di già p
 passaggi irrinunciabili sono il **consolidamento con il suo report** e l'**apertura
 dell'export**: è lì che si vede la differenza fra una cartella di file e un archivio logico.
 
-## Segmento 7 — Dove siamo e cosa manca (~10')
+## Segmento 7: Dove siamo e cosa manca (~10')
 
-**Cosa mostrare**: documento [05 — Stato dell'arte](05_stato_dell_arte.md).
+**Cosa mostrare**: documento [05: Stato dell'arte](05_stato_dell_arte.md).
 
 Che cosa esiste in numeri, e soprattutto le tre assenze deliberate: niente ricerca
 semantica, niente knowledge graph, niente motore agentico integrato. Dichiarare le
@@ -124,7 +124,7 @@ motivazioni e le misure che decideranno il seguito.
 > indicatore usereste, senza affidarvi a un'impressione? Guidare verso la copertura di
 > classificazione e la completezza per entità.
 
-## Segmento 8 — Consegna e chiusura (~5')
+## Segmento 8: Consegna e chiusura (~5')
 
 **Cosa mostrare**: documenti [06](06_dataset_di_prova.md), [07](07_avvio_mac.md) e
 [08](08_avvio_windows.md).
@@ -143,7 +143,7 @@ I tre passaggi da lasciare in aula:
 
 ## Esercizio assegnato
 
-**Principale** — Su Wikify installato sul proprio computer e sull'archivio di prova:
+**Principale.** Su Wikify installato sul proprio computer e sull'archivio di prova:
 percorrere l'intera catena fino all'export. Consegna: il file JSON prodotto e due righe sul
 dato che ha sorpreso di più fra gli indicatori di copertura. Il criterio di riuscita è
 dichiarato in anticipo: non il numero di file trattati, ma la **percentuale di documenti
@@ -157,11 +157,11 @@ classificati e agganciati a un'entità**. È una misura, non un'impressione.
 - *Orientata alla riservatezza*: costruire tre regole nel dizionario dei pattern per
   intercettare un tipo di informazione sensibile del proprio contesto, verificarle con la
   prova live e misurare quanti file vengono intercettati.
-- *Senza installare nulla*: a partire dall'export fornito, redigere la scheda di due entità —
-  quali tipologie sono presenti, quali mancano, quali documenti risultano riservati e perché
+- *Senza installare nulla.* A partire dall'export fornito, redigere la scheda di due entità:
+quali tipologie sono presenti, quali mancano, quali documenti risultano riservati e perché
   questo condiziona la fase successiva.
 - *Di taglio progettuale*: redigere in una pagina la proposta di fase 2 per il proprio
-  contesto — quale livello architetturale aggiungere per primo, con quale criterio di
+  contesto: quale livello architetturale aggiungere per primo, con quale criterio di
   verifica e quale rischio principale.
 
 ## Da raccogliere durante la sessione

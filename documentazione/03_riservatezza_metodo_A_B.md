@@ -16,11 +16,11 @@ Prima ancora di introdurre una soluzione tecnica, si è fissato un principio di 
 
 ## Il metodo A: deterministico
 
-Il metodo A è una scansione algoritmica, scritta in Python ed eseguita interamente in locale, che rileva pattern testuali riconducibili a informazioni riservate — parametri di configurazione, credenziali di interconnessione, riferimenti a clienti specifici, marcature esplicite come "riservato" — e li segnala in un report puntuale, con evidenza e posizione. Nessun contenuto lascia il perimetro aziendale: è condizione necessaria perché il metodo possa operare prima ancora che la riservatezza sia nota.
+Il metodo A è una scansione algoritmica, scritta in Python ed eseguita interamente in locale, che rileva pattern testuali riconducibili a informazioni riservate (parametri di configurazione, credenziali di interconnessione, riferimenti a clienti specifici, marcature esplicite come "riservato") e li segnala in un report puntuale, con evidenza e posizione. Nessun contenuto lascia il perimetro aziendale: è condizione necessaria perché il metodo possa operare prima ancora che la riservatezza sia nota.
 
-I pregi e i limiti del metodo A vanno dichiarati senza reticenze, perché condizionano l'uso che se ne può fare. È totalmente riproducibile — stesso input, stesso output, verificabile in ogni momento — e quindi pienamente auditabile.
+I pregi e i limiti del metodo A vanno dichiarati senza reticenze, perché condizionano l'uso che se ne può fare. È totalmente riproducibile (stesso input, stesso output, verificabile in ogni momento) e quindi pienamente auditabile.
 
-Per contro, riconosce solo ciò che il dizionario dei pattern gli ha insegnato a cercare: il rischio di falsi negativi sul non previsto è concreto, mentre i falsi positivi, pur frequenti su pattern generici, restano economici da scartare in fase di revisione umana. Richiede un costo di avvio — costruire il dizionario dei pattern insieme al responsabile tecnico — e un costo di manutenzione nel tempo, ma quel dizionario, una volta costruito, resta un asset di sicurezza permanente, riutilizzabile ben oltre l'occasione che lo ha originato.
+Per contro, riconosce solo ciò che il dizionario dei pattern gli ha insegnato a cercare: il rischio di falsi negativi sul non previsto è concreto, mentre i falsi positivi, pur frequenti su pattern generici, restano economici da scartare in fase di revisione umana. Richiede un costo di avvio, costruire il dizionario dei pattern insieme al responsabile tecnico, e un costo di manutenzione nel tempo, ma quel dizionario, una volta costruito, resta un asset di sicurezza permanente, riutilizzabile ben oltre l'occasione che lo ha originato.
 
 ## Il metodo B: agentico
 
@@ -45,7 +45,7 @@ Nessuno dei due metodi è preferibile in assoluto: la tabella seguente mette a c
 
 ## La sequenza, non l'alternativa
 
-I due metodi non sono in competizione: presidiano rischi diversi, e per questo la soluzione adottata li dispone in sequenza anziché sceglierne uno solo. Il metodo A è lo strumento giusto quando l'errore da evitare è l'esposizione — meglio un falso positivo di troppo che un dato riservato condiviso per errore. Il metodo B è lo strumento giusto quando l'errore da evitare è una classificazione povera — meglio comprendere il contesto che applicare regole cieche. La sequenza operativa adottata è la seguente:
+I due metodi non sono in competizione: presidiano rischi diversi, e per questo la soluzione adottata li dispone in sequenza anziché sceglierne uno solo. Il metodo A è lo strumento giusto quando l'errore da evitare è l'esposizione: meglio un falso positivo di troppo che un dato riservato condiviso per errore. Il metodo B è lo strumento giusto quando l'errore da evitare è una classificazione povera: meglio comprendere il contesto che applicare regole cieche. La sequenza operativa adottata è la seguente:
 
 1. costruzione del dizionario dei pattern con il responsabile tecnico, a partire da un'ipotesi di ciò che è certamente riservato (parametri di configurazione, credenziali di interconnessione, riferimenti a clienti, dati di sperimentazione non pubblicati);
 2. scansione deterministica del metodo A sul campione, con report per file, pattern rilevato, posizione e contesto; nessun contenuto lascia il perimetro;
@@ -60,7 +60,7 @@ Questa retroazione merita un'osservazione a parte: il dizionario dei pattern non
 
 L'artefatto centrale di questa fase è il registro di segregazione, alimentato progressivamente man mano che le informazioni vengono qualificate. Non è un sottoprodotto dell'assessment: è il primo nucleo della tassonomia di riservatezza del progetto, e la base con cui verrà configurata in futuro la separazione degli accessi del sistema finale.
 
-Per ciascun riferimento puntuale — file, foglio, capitolo, intervallo di righe — il registro riporta:
+Per ciascun riferimento puntuale (file, foglio, capitolo, intervallo di righe) il registro riporta:
 
 - la **qualifica** assegnata: Riservato, Condivisibile o Da valutare;
 - la **motivazione**, cioè il criterio applicato dal responsabile tecnico nell'attribuirla;

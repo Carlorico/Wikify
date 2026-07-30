@@ -1,4 +1,4 @@
-# Assessment dell'archivio esistente — Piano operativo
+# Assessment dell'archivio esistente: Piano operativo
 
 Obiettivo: fotografare lo stato reale dell'archivio (struttura, qualità, uniformità, criticità) e raccogliere le informazioni chiave necessarie per impostare il modello informativo, la pipeline di ingestione e il perimetro del PoC.
 
@@ -6,7 +6,7 @@ Principio guida: l'assessment combina **rilevazione automatica** (estensiva, su 
 
 ---
 
-## Fase 0 — Preparazione
+## Fase 0: Preparazione
 
 | Attività | Dettaglio | Esito da registrare |
 |---|---|---|
@@ -18,7 +18,7 @@ Principio guida: l'assessment combina **rilevazione automatica** (estensiva, su 
 
 ---
 
-## Fase 1 — Scansione automatica dell'intero archivio
+## Fase 1: Scansione automatica dell'intero archivio
 
 Uno script percorre l'albero delle cartelle e produce un **inventario** (CSV/XLSX). Nessuna lettura dei contenuti in questa fase: solo metadati di filesystem.
 
@@ -46,7 +46,7 @@ Uno script percorre l'albero delle cartelle e produce un **inventario** (CSV/XLS
 
 ---
 
-## Fase 2 — Analisi del file XLS progetti ↔ articoli
+## Fase 2: Analisi del file XLS progetti ↔ articoli
 
 Il file è l'embrione del futuro catalogo: va misurata la sua affidabilità.
 
@@ -62,7 +62,7 @@ Sezione "qualità XLS" nel foglio KPI: % copertura incrociata, n. anomalie per t
 
 ---
 
-## Fase 3 — Esame del campione: strategia a due metodi
+## Fase 3: Esame del campione: strategia a due metodi
 
 ### Premessa: il vincolo di riservatezza verso l'AI
 
@@ -70,8 +70,8 @@ Sezione "qualità XLS" nel foglio KPI: % copertura incrociata, n. anomalie per t
 
 La strategia adottata scioglie la circolarità con **due metodi in sequenza**:
 
-- **Metodo A — deterministico**: scansione algoritmica in Python, eseguita interamente in locale, che rileva pattern testuali riconducibili a informazioni riservate e li evidenzia in un report. Nessun contenuto esce dal perimetro aziendale.
-- **Metodo B — agentico**: l'esame assistito da agente con validazione umana (descritto da §3.2 in poi), applicato **solo ai materiali che il Metodo A e la validazione del responsabile tecnico hanno qualificato come condivisibili**.
+- **Metodo A: deterministico**: scansione algoritmica in Python, eseguita interamente in locale, che rileva pattern testuali riconducibili a informazioni riservate e li evidenzia in un report. Nessun contenuto esce dal perimetro aziendale.
+- **Metodo B: agentico**: l'esame assistito da agente con validazione umana (descritto da §3.2 in poi), applicato **solo ai materiali che il Metodo A e la validazione del responsabile tecnico hanno qualificato come condivisibili**.
 
 ### Nota comparativa
 
@@ -116,7 +116,7 @@ Questo registro non è un sottoprodotto dell'assessment: è il **primo nucleo de
 
 ---
 
-## Fase 3B — Esame del campione assistito da agente (Metodo B)
+## Fase 3B: Esame del campione assistito da agente (Metodo B)
 
 Impostazione: un **agente di rilevazione** compila le schede in bozza; il **responsabile tecnico valida tramite un'interfaccia dedicata**. Le correzioni del validatore misurano il tasso di errore dell'agente. Questa fase è, di fatto, il **prototipo della futura pipeline di classificazione**: se l'approccio regge sul campione, l'architettura "classificazione assistita da LLM con revisione umana" risulta validata su dati reali.
 
@@ -213,7 +213,7 @@ Il punto **D è il più importante**: verifica sul campo quanto è frequente il 
 
 ---
 
-## Fase 4 — Discovery con gli uffici
+## Fase 4: Discovery con gli uffici
 
 ### 4.1 Ufficio commerciale (i richiedenti)
 Raccogliere le **ultime 20-30 richieste reali** fatte all'ufficio tecnico (da email, a memoria, da ticket se esistono). Per ognuna registrare:
@@ -244,7 +244,7 @@ L'ultima domanda è strutturale: distingue un progetto di **migrazione una tantu
 
 ---
 
-## Fase 5 — Sintesi e informazioni chiave per il progetto
+## Fase 5: Sintesi e informazioni chiave per il progetto
 
 Al termine, compilare la tabella di sintesi: ogni riga è un'informazione chiave che condiziona una scelta progettuale.
 

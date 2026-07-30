@@ -1,4 +1,4 @@
-# Materiale interno — non si consegna
+# Materiale interno, non si consegna
 
 Questa cartella contiene i documenti di lavoro del progetto: restano vivi e vengono
 alimentati man mano, ma **non fanno parte di ciò che si condivide** con allievi o clienti.
@@ -17,7 +17,7 @@ alla consegna, e fallisce se per qualsiasi ragione dovesse ritrovarsela dentro.
 
 Non per riservatezza, ma per **finalità**. Sono documenti di processo: registrano
 ripensamenti, alternative scartate, errori corretti e valutazioni ancora aperte. Utilissimi
-a chi conduce il progetto, disorientanti per chi lo riceve — che ha bisogno di una linea
+a chi conduce il progetto, disorientanti per chi lo riceve: che ha bisogno di una linea
 chiara, non della cronaca di come si è arrivati a tracciarla.
 
 La documentazione destinata a terzi vive in `documentazione/`, è numerata secondo l'ordine

@@ -1,7 +1,7 @@
 # Wikify, applicazione web locale
 
-Manuale d'uso dell'applicazione. Per il progetto nel suo insieme — contesto,
-requisiti, scelte architetturali e percorso di lettura — vedere il
+Manuale d'uso dell'applicazione. Per il progetto nel suo insieme (contesto,
+requisiti, scelte architetturali e percorso di lettura) vedere il
 [README del progetto](../README.md) e la cartella `documentazione/`.
 
 Che cosa contiene l'applicazione: dashboard con gli indicatori
@@ -370,8 +370,8 @@ di progettazione, documentati anche in `core/db.py` e `core/archivio.py`:
 
 - `documenti.entita_id` e `documenti.tipologia_regola_id` non dichiarano
   `REFERENCES`: sono collegamenti derivati, ricalcolati a ogni
-  consolidamento, non un vincolo di integrità referenziale permanente —
-  coerentemente con la natura non distruttiva della ricostruzione,
+  consolidamento, non un vincolo di integrità referenziale permanente:
+coerentemente con la natura non distruttiva della ricostruzione,
   un'entità o una regola cancellate non devono impedire la lettura dei
   documenti già scritti;
 - l'aggancio documento → entità richiede la scelta esplicita del tipo di

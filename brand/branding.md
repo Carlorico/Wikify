@@ -1,4 +1,4 @@
-# Wikify — Identità e materiali di brand
+# Wikify: Identità e materiali di brand
 
 Materiale di riferimento per l'app e per la skill che guiderà la realizzazione del tool. Registrato il 26/07/2026 su indicazione di Carlo.
 

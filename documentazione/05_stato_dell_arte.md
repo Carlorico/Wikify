@@ -6,7 +6,7 @@ quali indicatori orientano il seguito.*
 ## Che cosa esiste
 
 L'applicazione è completa e in esercizio nella sua prima versione. È un'applicazione web
-locale — Flask e SQLite, nessun servizio esterno — organizzata su un nucleo condiviso e
+locale (Flask e SQLite, nessun servizio esterno) organizzata su un nucleo condiviso e
 cinque moduli funzionali, ciascuno con le proprie tabelle e le proprie pagine.
 
 | Ambito | Stato |
@@ -34,7 +34,7 @@ Alcuni numeri, utili a inquadrare la solidità di quanto esiste:
 
 ## Che cosa è stato provato, e con quale esito
 
-La catena completa è stata percorsa su un archivio di prova reale di 389 MB — 95 file su 31
+La catena completa è stata percorsa su un archivio di prova reale di 389 MB: 95 file su 31
 cartelle progetto, descritto nel documento [06](06_dataset_di_prova.md).
 
 | Fase | Esito rilevato |
@@ -49,7 +49,7 @@ cartelle progetto, descritto nel documento [06](06_dataset_di_prova.md).
 
 Il 94% di copertura non è un difetto da correggere prima di mostrarlo: cinque documenti
 usano una variante di nomenclatura che le regole di dimostrazione non prevedono. È
-esattamente la funzione dell'indicatore — rendere visibile una lacuna e indicare dove
+esattamente la funzione dell'indicatore: rendere visibile una lacuna e indicare dove
 aggiungere una regola.
 
 ## Che cosa non è stato costruito
@@ -64,8 +64,8 @@ valle sulla risposta. Prima serve l'archivio logico, che è ciò che questa vers
 **Non c'è un knowledge graph.** Costruirlo su entità non ancora consolidate significherebbe
 rifarlo: le entità esistono da poco e la loro completezza è ancora in corso di misurazione.
 
-**Non c'è un motore agentico integrato.** L'infrastruttura è pronta — il connettore MCP
-consente già a un agente esterno di lavorare sul solo perimetro condivisibile — ma
+**Non c'è un motore agentico integrato.** L'infrastruttura è pronta, il connettore MCP
+consente già a un agente esterno di lavorare sul solo perimetro condivisibile, ma
 l'automazione della classificazione richiede prima di sapere quanto è accurata. Costruirla
 adesso sarebbe un atto di fede.
 

@@ -9,11 +9,11 @@ Per mettere alla prova Wikify serviva un archivio realistico ma non riservato: u
 
 La fonte individuata è il portale **schede-tecniche.it**, un archivio amatoriale-professionale di documentazione tecnica per apparecchi domestici (caldaie, climatizzatori, scaldabagni e altro), costruito per finalità di certificazione energetica e utile, in questo contesto, come giacimento di documentazione tecnica pubblica organizzata in modo per molti versi analogo al dominio reale.
 
-All'interno del portale è stata selezionata la sezione **caldaie Immergas**, con quattro serie di prodotto (ARES, EOLO, VICTRIX, ZEUS), per una motivazione precisa e verificata sul campo, non solo ipotizzata: è l'unica sezione su cui si è potuto accertare concretamente, tramite ispezione di documenti singoli, che i PDF sono nativi e il testo è pienamente estraibile — requisito imprescindibile, dato che lo scanner di Wikify non dispone di riconoscimento ottico dei caratteri.
+All'interno del portale è stata selezionata la sezione **caldaie Immergas**, con quattro serie di prodotto (ARES, EOLO, VICTRIX, ZEUS), per una motivazione precisa e verificata sul campo, non solo ipotizzata: è l'unica sezione su cui si è potuto accertare concretamente, tramite ispezione di documenti singoli, che i PDF sono nativi e il testo è pienamente estraibile: requisito imprescindibile, dato che lo scanner di Wikify non dispone di riconoscimento ottico dei caratteri.
 
-La sezione presenta inoltre tre tipologie documentali chiaramente distinguibili — manuale d'uso multi-sezione, scheda tecnica parametrica a tabella, libretto istruzioni per l'installatore o il tecnico — utili a esercitare la classificazione documentale, e una relazione 1:N diretta e verificabile fra famiglia di prodotto e codici commerciali, assimilabile al rapporto progetto↔articolo del dominio reale. Con una differenza da tenere presente: qui la relazione va ricostruita dalla struttura delle pagine del sito, non ereditata da un file gestionale già esistente.
+La sezione presenta inoltre tre tipologie documentali chiaramente distinguibili (manuale d'uso multi-sezione, scheda tecnica parametrica a tabella, libretto istruzioni per l'installatore o il tecnico) utili a esercitare la classificazione documentale, e una relazione 1:N diretta e verificabile fra famiglia di prodotto e codici commerciali, assimilabile al rapporto progetto↔articolo del dominio reale. Con una differenza da tenere presente: qui la relazione va ricostruita dalla struttura delle pagine del sito, non ereditata da un file gestionale già esistente.
 
-Un'alternativa, la sezione caldaie/bollitori/scaldabagni Baxi–Westen, è stata considerata e scartata in seconda battuta: il volume complessivo è maggiore ma meno controllato, e il naming dei file è meno uniforme, con il rischio di introdurre rumore non rappresentativo nella fase di classificazione automatica.
+Un'alternativa, la sezione caldaie/bollitori/scaldabagni Baxi-Westen, è stata considerata e scartata in seconda battuta: il volume complessivo è maggiore ma meno controllato, e il naming dei file è meno uniforme, con il rischio di introdurre rumore non rappresentativo nella fase di classificazione automatica.
 
 Sul piano dell'uso della fonte va segnalata un'area di attenzione che resta aperta: il sito dichiara esplicitamente che la documentazione tecnica è di proprietà dei singoli produttori e viene ripubblicata per finalità di consultazione, senza rivendicarne la titolarità né dichiarare una licenza d'uso per la redistribuzione.
 
@@ -21,7 +21,7 @@ Il prelievo di un campione limitato, per uso interno a un corso e non ridistribu
 
 ## Che cosa contiene l'archivio
 
-L'archivio costituito occupa **389 MB** per **95 file**, organizzati in **31 cartelle progetto** poste al primo livello sotto la radice — coerentemente con il modello dati di Wikify, che riconosce come cartella progetto proprio il primo livello. La composizione per formato è la seguente:
+L'archivio costituito occupa **389 MB** per **95 file**, organizzati in **31 cartelle progetto** poste al primo livello sotto la radice: coerentemente con il modello dati di Wikify, che riconosce come cartella progetto proprio il primo livello. La composizione per formato è la seguente:
 
 | Formato | File | Contenuto |
 |---|---|---|
@@ -50,7 +50,7 @@ archivio_prova/
 
 `progetti_articoli.xlsx` lega ogni cartella progetto ai propri codici commerciali con colonne `id_progetto`, `serie`, `codice_commerciale`, `tipo_prodotto`, `anno_documento`, `note`. Conta 55 righe per 31 progetti distinti, con 54 codici commerciali tutti diversi fra loro.
 
-In 19 progetti su 31 (61%) sono presenti più codici commerciali per lo stesso progetto — è la relazione 1:N che il file deve dimostrare, con esempi come `ARES_18-25`, a cui corrispondono i codici ARES-18 e ARES-25, o `VICTRIX_MAIOR`, a cui ne corrispondono due varianti.
+In 19 progetti su 31 (61%) sono presenti più codici commerciali per lo stesso progetto: è la relazione 1:N che il file deve dimostrare, con esempi come `ARES_18-25`, a cui corrispondono i codici ARES-18 e ARES-25, o `VICTRIX_MAIOR`, a cui ne corrispondono due varianti.
 
 La colonna `anno_documento` è stata lasciata sistematicamente vuota, perché nessuno dei documenti riportava un anno affidabile in etichetta o nel nome file: si è preferito lasciare il vuoto piuttosto che stimarlo. Il file, va ricordato, non discende da un export gestionale ma da una lettura diretta delle pagine del sito di origine: resta quindi un margine di soggettività nella scelta di quali varianti considerare codici commerciali distinti rispetto a semplici rinominazioni dello stesso prodotto.
 
@@ -58,7 +58,7 @@ La colonna `anno_documento` è stata lasciata sistematicamente vuota, perché ne
 
 Poiché i documenti originali sono manuali pubblici privi di contenuti riservati, in 8 delle 31 cartelle progetto sono stati inseriti file aggiuntivi fittizi: un verbale di collaudo (`verbale_collaudo_simulato.docx`) e un file di parametri di configurazione cliente (`parametri_configurazione_cliente.xlsx`), distribuiti sulle quattro serie con una combinazione bilanciata fra cartelle con entrambi i file e cartelle con un solo file.
 
-Ogni documento riporta in apertura la dicitura "documento sintetico generato a scopo didattico — dati non reali" e non contiene nominativi o ragioni sociali realmente esistenti: i verbali includono matricole fittizie e un cliente di fantasia, i file di parametri includono indirizzi IP di esempio, credenziali fittizie e un indirizzo email su dominio convenzionale (`example.com`). In totale sono 12 i documenti pensati per essere intercettati dallo scanner di riservatezza.
+Ogni documento riporta in apertura una dicitura che ne dichiara la natura sintetica e la non veridicità dei dati, e non contiene nominativi o ragioni sociali realmente esistenti: i verbali includono matricole fittizie e un cliente di fantasia, i file di parametri includono indirizzi IP di esempio, credenziali fittizie e un indirizzo email su dominio convenzionale (`example.com`). In totale sono 12 i documenti pensati per essere intercettati dallo scanner di riservatezza.
 
 ## L'esito del collaudo
 
@@ -83,7 +83,7 @@ L'archivio è stato percorso per intero da Wikify, con esito di **20 verifiche s
 
 **Aggancio alle entità: 94 su 95.** L'unico documento non agganciato è di nuovo `progetti_articoli.xlsx`: un comportamento corretto, non un difetto, perché nel dominio reale il file di relazione progetto↔articolo vive anch'esso fuori dalle cartelle progetto, non al loro interno.
 
-Va segnalata anche un'osservazione collaterale sull'import del file tabellare, utile a scopo didattico: l'import registra 47 anomalie, tutte di tipo duplicato esatto, corrispondenti ai valori di `serie` e `tipo_prodotto` che si ripetono sulle righe di uno stesso progetto mentre solo il codice commerciale varia. Non è un difetto del file, è la deduplicazione che distingue correttamente l'attributo realmente 1:N da quelli costanti — una segnalazione che a prima vista può allarmare e che invece va letta come segno di corretto funzionamento.
+Va segnalata anche un'osservazione collaterale sull'import del file tabellare, utile a scopo didattico: l'import registra 47 anomalie, tutte di tipo duplicato esatto, corrispondenti ai valori di `serie` e `tipo_prodotto` che si ripetono sulle righe di uno stesso progetto mentre solo il codice commerciale varia. Non è un difetto del file, è la deduplicazione che distingue correttamente l'attributo realmente 1:N da quelli costanti: una segnalazione che a prima vista può allarmare e che invece va letta come segno di corretto funzionamento.
 
 ## Tempi da prevedere in aula
 

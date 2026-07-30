@@ -1,4 +1,4 @@
-# Wikify — avvio passo passo su Mac
+# Wikify: avvio passo passo su Mac
 
 *Risponde alla domanda: come si installa e si avvia Wikify su un Mac, passo per passo.*
 
@@ -145,7 +145,7 @@ e che non ci siano messaggi di errore.
 
 **"Address already in use" (porta 5000 occupata)**
 Due cause possibili. La prima: un'altra copia di Wikify è già in
-esecuzione in un'altra finestra del Terminale — chiuderla con
+esecuzione in un'altra finestra del Terminale: chiuderla con
 `Control + C`. La seconda, tipica dei Mac: il **Ricevitore AirPlay**
 occupa la porta 5000; si disattiva da Impostazioni di Sistema → Generali →
 AirDrop e Handoff → "Ricevitore AirPlay".

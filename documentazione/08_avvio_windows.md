@@ -1,4 +1,4 @@
-# Wikify — avvio passo passo su Windows
+# Wikify: avvio passo passo su Windows
 
 *Risponde alla domanda: come si installa e si avvia Wikify su Windows, passo per passo.*
 

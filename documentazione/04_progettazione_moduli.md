@@ -3,13 +3,13 @@
 *Risponde alla domanda: come sono stati progettati, uno per uno, i moduli funzionali di
 Wikify.*
 
-Wikify è organizzato su una base modulare (Flask + SQLite) che oggi ospita cinque moduli realizzati — Inventario e dashboard, Classificazione base, Catalogo, Validazione AI, Archivio logico — più le funzioni di servizio (utenti e accesso, manutenzione e reset). Questo documento raccoglie la progettazione di ciascun modulo, nell'ordine in cui è stato costruito.
+Wikify è organizzato su una base modulare (Flask + SQLite) che oggi ospita cinque moduli realizzati (Inventario e dashboard, Classificazione base, Catalogo, Validazione AI, Archivio logico) più le funzioni di servizio (utenti e accesso, manutenzione e reset). Questo documento raccoglie la progettazione di ciascun modulo, nell'ordine in cui è stato costruito.
 
 Principio: modularità "povera". Ogni modulo è un blueprint Flask con le proprie tabelle SQLite e le proprie pagine. Il pacchetto `core` (estrazione testo, attraversamento archivio, db) è condiviso fra i moduli e non si duplica.
 
 ---
 
-## Modulo 1 — Inventario e Dashboard (Fase 1 dell'assessment)
+## Modulo 1: Inventario e Dashboard (Fase 1 dell'assessment)
 
 > **Revisione del 26/07/2026 (sessione 11, impostazione di Carlo)**: l'inventario non è una scansione lanciata a mano di volta in volta, è la **mappa permanente dell'archivio** che l'app mantiene aggiornata. Comportamento: (1) primo inventario completo da zero, salvato; (2) a ogni riapertura dell'app, check automatico che rileva i file nuovi non ancora mappati; (3) i file che non sono mai passati dalla scansione di classificazione (triage) vengono evidenziati come "da classificare". La dashboard diventa la home dell'app e mostra i KPI dell'archivio.
 
@@ -56,11 +56,11 @@ file_inventario(id, inventario_id, percorso_rel, cartella_progetto,
 
 ---
 
-## Modulo 2 — Catalogo: entità logiche e arricchimento dati (Fase 2, evoluta)
+## Modulo 2: Catalogo, entità logiche e arricchimento dati (Fase 2, evoluta)
 
 > **Revisione del 26/07/2026 (sessione 12, impostazione di Carlo)**: il modulo non è più una verifica una tantum del file XLS, è la **nascita del catalogo**. Due funzioni: un motore di entità (definizione + autogenerazione da criterio) e un arricchimento deterministico da fonti esterne tabellari. Le verifiche V1-V6 diventano il controllo di qualità del flusso di import. Voce di menu: sezione **"Catalogo"** (tra Classificazione base e Utenti) con sotto-voci **"Definizione entità"** e **"Arricchimento dati"**.
 
-### 2A — Definizione entità
+### 2A: Definizione entità
 L'utente crea un **tipo di entità** assegnando un nome (es. "Progetto") e scegliendo il **criterio di autogenerazione** delle istanze. Criteri MVP:
 - sorgente: cartelle di primo livello dell'inventario;
 - estrazione della chiave dal nome cartella: nome intero, oppure regola guidata (prefisso+formato o pattern, riusando il builder del dizionario) con **prova live sui nomi reali** delle cartelle prima di confermare.
@@ -69,7 +69,7 @@ Regole di comportamento:
 - le istanze nascono dal criterio ma **persistono**: se la cartella scompare o il criterio cambia, l'entità con i suoi attributi non si cancella, si marca "senza riscontro"; la rigenerazione è un riallineamento con report (nuove create, orfane marcate), mai ricostruzione da zero;
 - **chiavi duplicate** (due cartelle → stessa chiave estratta): conflitto mostrato all'utente, mai risolto in automatico.
 
-### 2B — Arricchimento dati (import CSV/XLS)
+### 2B: Arricchimento dati (import CSV/XLS)
 Carica un file tabellare e aggancia attributi alle entità in modo deterministico:
 1. upload (csv o xlsx) → anteprima prime righe;
 2. mappatura: quale colonna è la **chiave entità**, quali colonne sono **attributi** (nome attributo = intestazione colonna, rinominabile);
@@ -104,7 +104,7 @@ anomalie_import(id, importazione_id, tipo, riferimento, dettaglio,
 
 ---
 
-## Modulo 3 — Interfaccia di validazione (Fase 3B)
+## Modulo 3: Interfaccia di validazione (Fase 3B)
 
 ### Scopo
 Coda di revisione con cui il responsabile tecnico valida le proposte dell'agente di rilevazione (schede in bozza). Prototipo del futuro modulo di validazione della pipeline di classificazione. Requisiti già definiti in assessment.md §3.3; qui la traduzione tecnica.
@@ -151,7 +151,7 @@ note_conoscenza_tacita(id, lotto_id, cartella_progetto, testo, autore, data)
 
 ---
 
-## Modulo 4 — Connettore MCP e sessioni di analisi (26/07/2026)
+## Modulo 4: Connettore MCP e sessioni di analisi (26/07/2026)
 
 ### Scopo
 Collegare Claude/Claude Code a Wikify senza scambio manuale di file: un server MCP locale espone le funzioni del ciclo agentico come strumenti. Il perimetro condivisibile passa da regola scritta a **vincolo imposto dal server**: l'agente non può fisicamente leggere file fuori perimetro.
@@ -189,10 +189,10 @@ Tabella `sessioni_analisi` (ambito, n. progetti, modelli dichiarati, date, stato
 
 ---
 
-## Modulo 5 — Archivio logico (chiusura della fase 1, 29/07/2026)
+## Modulo 5: Archivio logico (chiusura della fase 1, 29/07/2026)
 
 ### Scopo
-Chiudere la prima versione di Wikify consegnando ciò che la fase 2 (retrieval semantico, knowledge graph, LLM-Wiki) presuppone e che oggi manca: **un archivio logico e organizzato**. I moduli esistenti hanno prodotto i materiali grezzi — la mappa dei file, la qualifica di riservatezza, le entità con i loro attributi, le proposte validate — ma il **documento non è ancora un oggetto di prima classe del catalogo**: non ha una tipologia stabile, non è legato esplicitamente all'entità, e la sua riservatezza vive dentro la singola scansione anziché come proprietà consolidata.
+Chiudere la prima versione di Wikify consegnando ciò che la fase 2 (retrieval semantico, knowledge graph, LLM-Wiki) presuppone e che oggi manca: **un archivio logico e organizzato**. I moduli esistenti hanno prodotto i materiali grezzi (la mappa dei file, la qualifica di riservatezza, le entità con i loro attributi, le proposte validate) ma il **documento non è ancora un oggetto di prima classe del catalogo**: non ha una tipologia stabile, non è legato esplicitamente all'entità, e la sua riservatezza vive dentro la singola scansione anziché come proprietà consolidata.
 
 Il modulo colma questo scarto senza introdurre alcuna componente AI: è consolidamento deterministico di informazioni già presenti, più una vista di navigazione e un export. La fase 2, quando arriverà, partirà da qui e non dal filesystem.
 
@@ -201,14 +201,14 @@ Ogni documento riceve una tipologia e un livello di riservatezza da tre sorgenti
 
 | Precedenza | Origine | Motivazione |
 |---|---|---|
-| 1 (massima) | `manuale` — correzione dell'operatore nella scheda documento | La decisione umana diretta non viene mai sovrascritta da una rielaborazione |
-| 2 | `validazione` — proposta dell'agente confermata o corretta in Validazione AI | È stata comunque vagliata da un umano |
+| 1 (massima) | `manuale`, correzione dell'operatore nella scheda documento | La decisione umana diretta non viene mai sovrascritta da una rielaborazione |
+| 2 | `validazione`, proposta dell'agente confermata o corretta in Validazione AI | È stata comunque vagliata da un umano |
 | 3 | `regola` (tipologia) / `triage` (riservatezza) | Derivazione automatica, sostituibile a ogni ricostruzione |
 
 La ricostruzione è **idempotente e non distruttiva**: rieseguirla non altera le assegnazioni di precedenza superiore e produce sempre un report di ciò che ha cambiato.
 
 ### Regole di tipologia
-Classificazione deterministica sul **nome del file, sul percorso e sull'estensione** — nessuna lettura del contenuto, nessun costo di elaborazione. Costruzione guidata analoga al builder del dizionario dei pattern, senza espressioni regolari:
+Classificazione deterministica sul **nome del file, sul percorso e sull'estensione**: nessuna lettura del contenuto, nessun costo di elaborazione. Costruzione guidata analoga al builder del dizionario dei pattern, senza espressioni regolari:
 
 - campo osservato: `nome_file`, `percorso`, `cartella_progetto`, `estensione`;
 - modo: `contiene`, `inizia_per`, `finisce_per`, `uguale_a`, `estensione_tra`;
@@ -237,7 +237,7 @@ Nuova sezione di menu **"Archivio logico"**, dopo Catalogo:
 1. **Regole di tipologia**: elenco ordinato per priorità con creazione guidata e prova live, riordino, attivazione/disattivazione.
 2. **Consolidamento**: pulsante di ricostruzione con report dettagliato (classificati per regola, da validazione, manuali conservati, non classificati, agganciati, orfani, riservatezza consolidata dal triage) e indicatori di copertura.
 3. **Esplora archivio**: navigazione entità → tipologia → documenti, con badge di riservatezza, filtri (entità, tipologia, riservatezza, stato di classificazione) e correzione manuale della tipologia sulla scheda del singolo documento.
-4. **Completezza per entità**: quali tipologie attese risultano assenti per ciascuna entità — la misura di quanto l'archivio sia effettivamente pronto per la fase 2.
+4. **Completezza per entità**: quali tipologie attese risultano assenti per ciascuna entità, ossia la misura di quanto l'archivio sia effettivamente pronto per la fase 2.
 5. **Export**: `archivio_logico.json` (formato `wikify-archivio/1.0`: entità, attributi, documenti con tipologia, riservatezza, origine e percorso) e `archivio_logico.xlsx` per la consultazione.
 
 ### Note di progetto
@@ -254,7 +254,7 @@ Nuova sezione di menu **"Archivio logico"**, dopo Catalogo:
 | 3 | Catalogo | Inventario | Realizzato | Fa nascere le entità logiche e vi aggancia gli attributi importati |
 | 4 | Validazione AI | Classificazione base (triage) | Realizzato | Consuma solo il perimetro condivisibile |
 | 5 | Archivio logico | Inventario, Catalogo, Validazione AI | Realizzato | Consolida tipologia, aggancio all'entità e riservatezza; produce il contratto di consegna verso la fase 2 |
-| 6 | Fase 2 — retrieval semantico e knowledge graph | Archivio logico (export `wikify-archivio/1.0`) | Sviluppo futuro, non ancora avviato | Costruisce indicizzazione semantica e grafo delle caratteristiche tecniche a partire dall'archivio logico, non dal filesystem |
+| 6 | Fase 2: retrieval semantico e knowledge graph | Archivio logico (export `wikify-archivio/1.0`) | Sviluppo futuro, non ancora avviato | Costruisce indicizzazione semantica e grafo delle caratteristiche tecniche a partire dall'archivio logico, non dal filesystem |
 
 ## Punti aperti
 
