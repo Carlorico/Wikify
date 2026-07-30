@@ -18,10 +18,10 @@ NOME=$(basename "$PROGETTO")
 DEST=${1:-"$(dirname "$PROGETTO")/Wikify_da_consegnare"}
 
 # --- Cosa NON viene condiviso, e perche' -----------------------------------
-# interno/        materiale del docente: registro delle sessioni, percorso di
-#                 conduzione del workshop, assessment originale. Documenti
-#                 vivi, che si continuano ad alimentare, ma non destinati a
-#                 terzi.
+# !!IINTERNO!!!/  materiale del docente: registro delle sessioni, percorso
+#                 di conduzione del workshop, assessment originale.
+#                 Documenti vivi, che si continuano ad alimentare, ma non
+#                 destinati a terzi.
 # strumenti/      utilita' di servizio del docente, compreso questo script:
 #                 a chi riceve il progetto non serve preparare pacchetti.
 # .git/           storia del progetto e configurazione del repository.
@@ -31,7 +31,7 @@ DEST=${1:-"$(dirname "$PROGETTO")/Wikify_da_consegnare"}
 #                 consegnano mai (risiedono comunque in ../Wikify_dati).
 # .venv/          ambiente virtuale locale, va ricreato sulla macchina di
 #                 destinazione seguendo la guida di avvio.
-ESCLUSI="interno strumenti .git __pycache__ .DS_Store data .venv"
+ESCLUSI="!!IINTERNO!!! strumenti .git __pycache__ .DS_Store data .venv"
 
 echo "Progetto:     $PROGETTO"
 echo "Destinazione: $DEST"
@@ -50,7 +50,7 @@ mkdir -p "$DEST"
 
 if command -v rsync >/dev/null 2>&1; then
     rsync -a \
-        --exclude 'interno/' \
+        --exclude '!!IINTERNO!!!/' \
         --exclude 'strumenti/' \
         --exclude '.git/' \
         --exclude '__pycache__/' \
@@ -70,8 +70,8 @@ fi
 
 # --- Verifica: nulla di escluso deve essere sopravvissuto ------------------
 errori=0
-if [ -d "$DEST/interno" ]; then
-    echo "ERRORE: la cartella interno/ è presente nella copia."
+if [ -d "$DEST/!!IINTERNO!!!" ]; then
+    echo "ERRORE: la cartella !!IINTERNO!!!/ è presente nella copia."
     errori=1
 fi
 if [ -d "$DEST/strumenti" ]; then
