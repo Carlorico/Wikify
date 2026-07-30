@@ -18,9 +18,12 @@ NOME=$(basename "$PROGETTO")
 DEST=${1:-"$(dirname "$PROGETTO")/Wikify_da_consegnare"}
 
 # --- Cosa NON viene condiviso, e perche' -----------------------------------
-# interno/        materiale di lavoro: registro delle sessioni, assessment
-#                 originale. Documenti vivi, che continuiamo ad alimentare,
-#                 ma non destinati a terzi.
+# interno/        materiale del docente: registro delle sessioni, percorso di
+#                 conduzione del workshop, assessment originale. Documenti
+#                 vivi, che si continuano ad alimentare, ma non destinati a
+#                 terzi.
+# strumenti/      utilita' di servizio del docente, compreso questo script:
+#                 a chi riceve il progetto non serve preparare pacchetti.
 # .git/           storia del progetto e configurazione del repository.
 # __pycache__/    bytecode rigenerabile.
 # .DS_Store       scorie del Finder.
@@ -28,7 +31,7 @@ DEST=${1:-"$(dirname "$PROGETTO")/Wikify_da_consegnare"}
 #                 consegnano mai (risiedono comunque in ../Wikify_dati).
 # .venv/          ambiente virtuale locale, va ricreato sulla macchina di
 #                 destinazione seguendo la guida di avvio.
-ESCLUSI="interno .git __pycache__ .DS_Store data .venv"
+ESCLUSI="interno strumenti .git __pycache__ .DS_Store data .venv"
 
 echo "Progetto:     $PROGETTO"
 echo "Destinazione: $DEST"
@@ -48,6 +51,7 @@ mkdir -p "$DEST"
 if command -v rsync >/dev/null 2>&1; then
     rsync -a \
         --exclude 'interno/' \
+        --exclude 'strumenti/' \
         --exclude '.git/' \
         --exclude '__pycache__/' \
         --exclude '.DS_Store' \
@@ -68,6 +72,10 @@ fi
 errori=0
 if [ -d "$DEST/interno" ]; then
     echo "ERRORE: la cartella interno/ è presente nella copia."
+    errori=1
+fi
+if [ -d "$DEST/strumenti" ]; then
+    echo "ERRORE: la cartella strumenti/ è presente nella copia."
     errori=1
 fi
 if [ -d "$DEST/app/data" ]; then

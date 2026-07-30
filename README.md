@@ -36,7 +36,6 @@ consegna.
 
 | # | Documento | Risponde alla domanda |
 |---|---|---|
-| 00 | [Percorso del workshop](documentazione/00_percorso_workshop.md) | Come si presenta e si prova il progetto in due ore |
 | 01 | [Contesto e problema](documentazione/01_contesto_e_problema.md) | Da dove nasce, chi ne soffre, quali domande deve reggere l'archivio |
 | 02 | [Requisiti e architettura](documentazione/02_requisiti_e_architettura.md) | Quali requisiti emergono e quale architettura ne consegue |
 | 03 | [Riservatezza: metodo A e metodo B](documentazione/03_riservatezza_metodo_A_B.md) | Perché il deterministico precede l'agentico, e come si qualifica ciò che è condivisibile |
@@ -55,7 +54,6 @@ consegna.
 | [scanner/](scanner/) | Lo scanner deterministico a riga di comando e il dizionario dei pattern: è la **fonte di verità** del dizionario, di cui l'applicazione conserva una copia di primo avvio |
 | [agente/](agente/) | Il contratto con l'agente di rilevazione: formato delle bozze e istruzioni operative. È la **fonte di verità**; `app/docs_agente/` ne contiene la copia scaricabile dall'applicazione |
 | [brand/](brand/) | Identità visuale: logo e note di marchio |
-| [strumenti/](strumenti/) | Utilità di servizio, fra cui la preparazione del pacchetto da consegnare |
 
 ## Che cos'è già stato costruito
 
@@ -122,20 +120,6 @@ agentico proprio. Non è un ritardo, è una decisione:
 
 Wikify porta l'archivio al punto in cui quei tre passi diventano possibili, e ne consegna
 l'esito in un formato dichiarato: `wikify-archivio/1.0`.
-
-## Preparare la cartella da consegnare
-
-Il progetto contiene anche materiale di lavoro interno, che non fa parte di ciò che si
-condivide. Per ottenere il pacchetto da consegnare:
-
-```
-strumenti/prepara_condivisione.sh
-```
-
-Lo script produce una copia completa e funzionante del progetto (documentazione,
-applicazione, scanner, contratto dell'agente, identità visuale) **escludendo** il
-materiale interno, i dati di lavoro e le scorie tecniche. Il dettaglio di ciò che viene
-escluso è dichiarato nello script stesso.
 
 ---
 
