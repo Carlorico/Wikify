@@ -37,9 +37,11 @@ Un knowledge graph (entità, attributi, relazioni) è la formalizzazione della p
 
 ## Volumi e loro implicazione
 
-La scala di riferimento (qualche migliaio di cartelle progetto, stimabili in 10.000-100.000 o più documenti) è un volume medio-grande per un contesto aziendale, ma pienamente gestibile dalle tecnologie standard di mercato: database relazionali, motori vettoriali, motori di ricerca full-text non pongono, a questa scala, alcun vincolo tecnologico stringente sulla scelta architetturale.
+La scala di riferimento è nell'ordine delle centinaia di cartelle progetto, con 5-10 file per cartella: alcune migliaia di documenti complessivi. È un volume contenuto, che non pone alcun vincolo tecnologico: database relazionali, motori vettoriali e motori di ricerca full-text lo gestiscono senza tensione, e lo stesso vale per soluzioni ordinarie e poco impegnative come un database incorporato.
 
-Il costo rilevante non è dunque tecnologico, ma di qualità del dato: quanti documenti hanno nomi e struttura uniformi, quanto è affidabile il file Excel esistente, quanto la nomenclatura dei file può essere sfruttata come prima fonte di classificazione automatica. È un punto che va verificato empiricamente su un campione prima di dimensionare la pipeline, non assunto per ipotesi: un volume gestibile in astratto può comunque nascondere margini di fragilità nella qualità dei dati che nessuna tecnologia, da sola, può colmare.
+Questa scala non allarga le opzioni architetturali, le **restringe in senso utile**: rende sconsigliabile qualunque sovradimensionamento. Costruire un'infrastruttura pensata per centinaia di migliaia di documenti, su un archivio che ne conta alcune migliaia, aggiungerebbe complessità di esercizio senza alcun beneficio misurabile, e sposterebbe il costo dove non serve.
+
+Il costo rilevante non è dunque tecnologico, ma di qualità del dato: quanti documenti hanno nomi e struttura uniformi, quanto è affidabile il file Excel esistente, quanto la nomenclatura dei file può essere sfruttata come prima fonte di classificazione automatica. È un punto che va verificato empiricamente su un campione prima di dimensionare qualunque cosa, non assunto per ipotesi: un volume gestibile in astratto può comunque nascondere margini di fragilità nella qualità dei dati che nessuna tecnologia, da sola, può colmare.
 
 ## Permessi per informazione: il requisito più strutturante
 
@@ -51,7 +53,7 @@ Fra i requisiti raccolti, la granularità dei permessi, per informazione e non p
 
 Questo requisito, di fatto, impone la razionalizzazione dell'informazione che era già emersa come esigenza generale: la classificazione non è un costo accessorio del progetto, ne è il cuore.
 
-Va aggiunta un'area di attenzione realistica: la classificazione di decine di migliaia di unità informative non può essere interamente manuale. L'ipotesi di lavoro è una classificazione assistita: da regole deterministiche dove possibile, basate sulla tipologia di documento e sulla posizione nella cartella progetto, da un modello linguistico con validazione umana dove le regole non bastano. Ne consegue che la classificazione va trattata come attività effettivamente centrale del progetto, non come passaggio preliminare a margine: è il tema del documento che segue, dedicato alla riservatezza e al metodo con cui è stata affrontata.
+Va aggiunta un'area di attenzione realistica. Su alcune migliaia di unità informative una classificazione interamente manuale sarebbe, in teoria, affrontabile: l'obiezione non è la quantità, è che una passata manuale non lascia una regola dietro di sé. Non si ripeterebbe sui documenti che entrano domani, non garantirebbe che il criterio applicato resti lo stesso nel tempo e fra operatori diversi, e non produrrebbe alcuna misura della propria affidabilità. L'ipotesi di lavoro resta quindi una classificazione assistita: da regole deterministiche dove possibile, basate sulla tipologia di documento e sulla posizione nella cartella progetto, da un modello linguistico con validazione umana dove le regole non bastano. Il volume contenuto rende però quella validazione umana **sostenibile per intero** e non solo a campione, il che rafforza l'impianto anziché indebolirlo. Ne consegue che la classificazione va trattata come attività effettivamente centrale del progetto, non come passaggio preliminare a margine: è il tema del documento che segue, dedicato alla riservatezza e al metodo con cui è stata affrontata.
 
 ## Confronto fra gli approcci candidati
 

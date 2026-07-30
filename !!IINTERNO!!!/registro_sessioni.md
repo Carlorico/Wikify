@@ -221,6 +221,13 @@ Un **knowledge graph** (l'approccio Grapify/LLM-Wiki) è la formalizzazione dell
 
 ### 5.2 Volumi: scala di riferimento
 
+> **Revisione del 30/07/2026 (nuovo input di Carlo)**: la scala di riferimento scende di un ordine di grandezza. Non qualche migliaio di cartelle progetto, ma **centinaia di cartelle**, con **5-10 file per cartella**: alcune migliaia di documenti complessivi, fra il migliaio e la decina di migliaia. Le implicazioni registrate sotto vanno lette alla luce di questa correzione, e tre di esse cambiano di segno:
+> 1. il volume **non esclude più** un approccio manuale per impossibilità materiale. L'argomento a favore dell'automazione diventa la **non capitalizzabilità** della passata manuale: non si ripete sui nuovi ingressi, non garantisce uniformità di criterio nel tempo e fra operatori, non lascia una regola riutilizzabile;
+> 2. il rischio si sposta dal sottodimensionamento al **sovradimensionamento**: costruire per centomila documenti ciò che ne serve per alcune migliaia aggiunge complessità di esercizio senza beneficio. Le tecnologie citate sotto (PostgreSQL, motori vettoriali, Elasticsearch) restano valide ma non sono necessarie: SQLite regge l'archivio reale, non solo la dimostrazione;
+> 3. la **validazione umana integrale** diventa sostenibile, non più solo campionaria: l'impianto "l'agente propone, l'umano dispone" smette di essere un compromesso di scala e diventa la modalità ordinaria. Di conseguenza le stime di costo dell'elaborazione agentica annotate nella sessione 14 (150-400 euro con Haiku, 500-1.500 con Sonnet sull'archivio intero) vanno ridotte di circa un ordine di grandezza, verosimilmente a decine di euro: cifre che non richiedono una valutazione di investimento.
+>
+> Il costo dominante resta quello già individuato, la qualità e l'uniformità dei dati di partenza, che con il volume fuori dall'equazione diventa l'unico fattore capace di far fallire il progetto. Aggiornati di conseguenza i documenti condivisi 01 e 02 e il README.
+
 Chiarimento richiesto: la scala usata era indicativa. Con **qualche migliaio di cartelle progetto** e, ipotizzando 10-50 file per cartella, si stimano **10.000-100.000+ documenti**. Implicazioni:
 - volume medio-grande per un contesto aziendale: **esclude approcci artigianali** (indicizzazione manuale integrale) e richiede una **pipeline automatizzata** di ingestione e classificazione;
 - pienamente gestibile da tecnologie standard (PostgreSQL, motori vettoriali come Qdrant/pgvector, Elasticsearch): **nessun vincolo di scala** sulla scelta architetturale;

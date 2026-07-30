@@ -89,6 +89,8 @@ Va segnalata anche un'osservazione collaterale sull'import del file tabellare, u
 
 La scansione dei 95 file per 389 MB ha richiesto circa cinque minuti su un portatile recente: un tempo da mettere in conto nella pianificazione dell'esercitazione, o da ridurre facendo eseguire agli studenti la scansione su un sottoinsieme delle cartelle anziché sull'archivio intero.
 
+Una nota sulla rappresentatività, utile a inquadrare il valore della prova. L'archivio reale è nell'ordine delle centinaia di cartelle progetto con 5-10 file per cartella; il surrogato ne conta 31 con una media di tre. La distanza è quindi di un ordine di grandezza, non di tre o quattro come sarebbe stato rispetto a un archivio di centomila documenti: il campione non è un giocattolo, è una versione ridotta della stessa cosa. Estrapolando il tempo misurato, una scansione dell'archivio reale si collocherebbe nell'ordine delle ore e non dei giorni, un dato che rende praticabile l'esecuzione periodica anziché una passata unica.
+
 ## Aree di attenzione residue
 
 Alcuni aspetti del dataset restano da tenere presenti nella conduzione del corso.

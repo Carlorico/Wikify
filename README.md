@@ -16,7 +16,7 @@ lascia la macchina.
 
 Un'azienda custodisce l'archivio storico delle proprie schede progetto: specifiche
 tecniche, manuali, dati di sperimentazione, parametri di configurazione, in formati
-eterogenei e distribuiti su migliaia di cartelle. L'archivio è competenza dell'ufficio
+eterogenei e distribuiti su centinaia di cartelle. L'archivio è competenza dell'ufficio
 tecnico, ma serve continuamente all'ufficio commerciale, che non avendo la competenza per
 consultarlo passa dai referenti tecnici. Ne deriva un collo di bottiglia: onere ricorrente
 da una parte, attesa dall'altra.
