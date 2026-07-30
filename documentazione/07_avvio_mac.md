@@ -1,5 +1,7 @@
 # Wikify — avvio passo passo su Mac
 
+*Risponde alla domanda: come si installa e si avvia Wikify su un Mac, passo per passo.*
+
 Guida operativa per installare ed eseguire Wikify sul proprio computer. Non
 è richiesta alcuna competenza di programmazione: si tratta di copiare
 alcuni comandi nel Terminale.
@@ -32,21 +34,23 @@ python3 --version
 
 ## 2. Scaricare il progetto
 
-Il progetto risiede in un repository su GitHub. Due possibilità:
+Il progetto viene distribuito dal docente, in una delle due forme seguenti.
 
-**a) Con git** (se `git --version` risponde correttamente):
+**a) Copia ZIP ricevuta dal docente**: estrarre l'archivio ricevuto e
+spostare la cartella ottenuta in `Documenti`, rinominandola `Wikify` se
+necessario.
+
+**b) Con git**, se si è stati abilitati al repository e `git --version`
+risponde correttamente:
 
 ```
 cd ~/Documents
-git clone https://github.com/Carlorico/Wikify.git
+git clone <url del repository fornito dal docente>
 ```
 
-**b) Senza git**: scaricare l'archivio ZIP dalla pagina del progetto
-(pulsante verde "Code" → "Download ZIP"), estrarlo e spostare la cartella
-ottenuta in `Documenti`, rinominandola `Wikify`.
-
-> Se il repository risulta privato, occorre esservi stati abilitati oppure
-> ricevere la copia ZIP direttamente dal docente.
+> Il repository è privato: senza l'abilitazione nominale o la copia ZIP
+> ricevuta dal docente non è possibile scaricare il progetto autonomamente
+> da una pagina pubblica.
 
 ## 3. Preparare l'ambiente e installare le librerie
 

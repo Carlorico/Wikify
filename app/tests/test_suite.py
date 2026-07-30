@@ -3596,5 +3596,45 @@ class TestArchivioConsolidamento(unittest.TestCase):
         self.client.post("/utenti/accesso", data={"utente": "1", "pin": "1234"})
 
 
+class TestCoerenzaCopieGenerate(unittest.TestCase):
+    """Alcuni file esistono in due punti del progetto per necessita'
+    funzionale: il contratto dell'agente sta in agente/ ed e' scaricabile
+    dall'app da app/docs_agente/; il dizionario dei pattern e' dello scanner
+    CLI e l'app ne conserva un seme per il primo avvio. La fonte di verita'
+    e' sempre quella fuori da app/. Queste verifiche fanno fallire la suite
+    se le copie divergono, cosi' il disallineamento non passa in silenzio."""
+
+    RADICE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    PROGETTO = os.path.dirname(RADICE)
+
+    def _confronta(self, fonte, copia):
+        percorso_fonte = os.path.join(self.PROGETTO, fonte)
+        percorso_copia = os.path.join(self.RADICE, copia)
+        if not os.path.exists(percorso_fonte):
+            self.skipTest("fonte di verita' non presente: %s" % fonte)
+        self.assertTrue(os.path.exists(percorso_copia),
+                        "copia mancante: app/%s" % copia)
+        with open(percorso_fonte, "rb") as f:
+            atteso = f.read()
+        with open(percorso_copia, "rb") as f:
+            trovato = f.read()
+        self.assertEqual(
+            atteso, trovato,
+            "app/%s non coincide con la fonte di verita' %s: "
+            "riallineare la copia" % (copia, fonte))
+
+    def test_01_contratto_agente_formato_bozze(self):
+        self._confronta("agente/formato_bozze.md",
+                        "docs_agente/formato_bozze.md")
+
+    def test_02_contratto_agente_istruzioni(self):
+        self._confronta("agente/istruzioni_agente.md",
+                        "docs_agente/istruzioni_agente.md")
+
+    def test_03_dizionario_seed_allineato_allo_scanner(self):
+        self._confronta("scanner/dizionario_pattern.yaml",
+                        "dizionario_seed.yaml")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

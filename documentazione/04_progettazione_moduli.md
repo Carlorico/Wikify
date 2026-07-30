@@ -1,8 +1,11 @@
-# Progettazione moduli — App modulare "Wikify Workbench"
+# Progettazione dei moduli
 
-Documento di progettazione dei moduli che si innestano sulla base modulare (Flask + SQLite) in costruzione. La base ospita già il modulo Scanner (dizionario guidato, scansione, storico, consultazione con triage). Qui si progettano i tre moduli successivi.
+*Risponde alla domanda: come sono stati progettati, uno per uno, i moduli funzionali di
+Wikify.*
 
-Principio: modularità "povera". Ogni modulo è un blueprint Flask + le sue tabelle SQLite + le sue pagine. Il pacchetto `core` (estrazione testo, attraversamento archivio, db) è condiviso e non si duplica.
+Wikify è organizzato su una base modulare (Flask + SQLite) che oggi ospita cinque moduli realizzati — Inventario e dashboard, Classificazione base, Catalogo, Validazione AI, Archivio logico — più le funzioni di servizio (utenti e accesso, manutenzione e reset). Questo documento raccoglie la progettazione di ciascun modulo, nell'ordine in cui è stato costruito.
+
+Principio: modularità "povera". Ogni modulo è un blueprint Flask con le proprie tabelle SQLite e le proprie pagine. Il pacchetto `core` (estrazione testo, attraversamento archivio, db) è condiviso fra i moduli e non si duplica.
 
 ---
 
@@ -107,7 +110,7 @@ anomalie_import(id, importazione_id, tipo, riferimento, dettaglio,
 Coda di revisione con cui il responsabile tecnico valida le proposte dell'agente di rilevazione (schede in bozza). Prototipo del futuro modulo di validazione della pipeline di classificazione. Requisiti già definiti in assessment.md §3.3; qui la traduzione tecnica.
 
 ### Vincolo di perimetro
-Il modulo consuma solo materiali qualificati **Condivisibili** nel registro di segregazione (tabella `triage` del modulo Scanner). Il punto di aggancio è una funzione in `core/db.py`: `elenco_condivisibili(scansione_id)` che restituisce i file/sezioni ammessi. L'agente (esterno all'app) riceve solo quel perimetro.
+Il modulo consuma solo materiali qualificati **Condivisibili** nel registro di segregazione (tabella `triage` del modulo Classificazione base). Il punto di aggancio è una funzione in `core/db.py`: `elenco_condivisibili(scansione_id)` che restituisce i file/sezioni ammessi. L'agente (esterno all'app) riceve solo quel perimetro.
 
 ### Dati in ingresso
 - Bozze di scheda prodotte dall'agente in formato JSON (una per cartella progetto del campione), importate via upload o cartella osservata. Formato concordato:
@@ -244,16 +247,18 @@ Nuova sezione di menu **"Archivio logico"**, dopo Catalogo:
 
 ## Roadmap di integrazione
 
-| Ordine | Modulo | Dipende da | Motivo dell'ordine |
-|---|---|---|---|
-| 1 | Scanner (in costruzione) | base | Sblocca il triage di riservatezza, prerequisito di tutto |
-| 2 | Inventario | base, walk condiviso | Serve alla Fase 2 e alla costruzione del campione |
-| 3 | Verifica XLS | Inventario | Incrocia le sue verifiche con l'inventario |
-| 4 | Validazione | Scanner (triage) | Consuma solo il perimetro condivisibile |
+| Ordine | Modulo | Dipende da | Stato | Motivo dell'ordine |
+|---|---|---|---|---|
+| 1 | Classificazione base | base | Realizzato | Sblocca il triage di riservatezza, prerequisito di tutto |
+| 2 | Inventario e dashboard | base, walk condiviso | Realizzato | Serve alla costruzione del campione e alla dashboard |
+| 3 | Catalogo | Inventario | Realizzato | Fa nascere le entità logiche e vi aggancia gli attributi importati |
+| 4 | Validazione AI | Classificazione base (triage) | Realizzato | Consuma solo il perimetro condivisibile |
+| 5 | Archivio logico | Inventario, Catalogo, Validazione AI | Realizzato | Consolida tipologia, aggancio all'entità e riservatezza; produce il contratto di consegna verso la fase 2 |
+| 6 | Fase 2 — retrieval semantico e knowledge graph | Archivio logico (export `wikify-archivio/1.0`) | Sviluppo futuro, non ancora avviato | Costruisce indicizzazione semantica e grafo delle caratteristiche tecniche a partire dall'archivio logico, non dal filesystem |
 
-## Punti aperti (da discutere)
+## Punti aperti
 
-1. ~~Passata combinata inventario+scanner~~ **Risolto (sessione 11)**: l'inventario è la mappa permanente con check automatico all'apertura; lo scanner resta operazione distinta, collegata dallo stato "da classificare" per file.
-2. **Formato JSON delle bozze agente**: da congelare prima di costruire l'agente della Fase 3B; la proposta è in questo documento.
-3. **Tassonomia delle tipologie documentali**: quella della scheda di rilevazione (assessment §3.5) è l'elenco di partenza per i select dell'interfaccia di validazione; va confermata col responsabile tecnico prima della Fase 3B.
-4. **Snapshot e versioning del XLS**: se il file aziendale cambia spesso, valutare il confronto tra snapshot successivi (fuori perimetro MVP).
+1. ~~Passata combinata inventario+scanner~~ **Risolto**: l'inventario è la mappa permanente con check automatico all'apertura; lo scanner resta operazione distinta, collegata dallo stato "da classificare" per file.
+2. ~~Formato JSON delle bozze agente~~ **Risolto**: il formato è stato congelato in `agente/formato_bozze.md` (contratto `wikify-bozza/1.0`) ed è quello effettivamente in uso da parte del connettore MCP e dell'import manuale.
+3. **Tassonomia delle tipologie documentali**: quella della scheda di rilevazione (assessment §3.5) resta l'elenco di partenza per i select dell'interfaccia di validazione e per le regole di tipologia dell'Archivio logico; va ancora confermata col responsabile tecnico.
+4. **Snapshot e versioning del XLS**: se il file aziendale cambia spesso, resta da valutare il confronto tra snapshot successivi (fuori perimetro delle versioni realizzate finora).

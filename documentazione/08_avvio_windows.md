@@ -1,5 +1,7 @@
 # Wikify — avvio passo passo su Windows
 
+*Risponde alla domanda: come si installa e si avvia Wikify su Windows, passo per passo.*
+
 Guida operativa per installare ed eseguire Wikify sul proprio computer. Non
 è richiesta alcuna competenza di programmazione: si tratta di copiare
 alcuni comandi nel Prompt dei comandi.
@@ -33,23 +35,24 @@ py --version
 
 ## 2. Scaricare il progetto
 
-Il progetto risiede in un repository su GitHub. Due possibilità:
+Il progetto viene distribuito dal docente, in una delle due forme seguenti.
 
-**a) Con git** (se `git --version` risponde correttamente):
+**a) Copia ZIP ricevuta dal docente**: prima di estrarla, fare clic destro
+sul file → Proprietà → se compare l'avviso "Il file proviene da un altro
+computer", selezionare **Annulla blocco**. Estrarre quindi in `Documenti`
+e rinominare la cartella `Wikify` se necessario.
+
+**b) Con git**, se si è stati abilitati al repository e `git --version`
+risponde correttamente:
 
 ```
 cd %USERPROFILE%\Documents
-git clone https://github.com/Carlorico/Wikify.git
+git clone <url del repository fornito dal docente>
 ```
 
-**b) Senza git**: scaricare l'archivio ZIP dalla pagina del progetto
-(pulsante verde "Code" → "Download ZIP"). Prima di estrarlo, fare clic
-destro sul file → Proprietà → se compare l'avviso "Il file proviene da un
-altro computer", selezionare **Annulla blocco**. Estrarre quindi in
-`Documenti` e rinominare la cartella `Wikify`.
-
-> Se il repository risulta privato, occorre esservi stati abilitati oppure
-> ricevere la copia ZIP direttamente dal docente.
+> Il repository è privato: senza l'abilitazione nominale o la copia ZIP
+> ricevuta dal docente non è possibile scaricare il progetto autonomamente
+> da una pagina pubblica.
 
 ## 3. Preparare l'ambiente e installare le librerie
 

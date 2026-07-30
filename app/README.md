@@ -1,13 +1,24 @@
-# Wikify (progetto Archivio Smart), applicazione web locale
+# Wikify, applicazione web locale
 
-Assessment di riservatezza di un archivio documentale: dashboard con KPI
+Manuale d'uso dell'applicazione. Per il progetto nel suo insieme — contesto,
+requisiti, scelte architetturali e percorso di lettura — vedere il
+[README del progetto](../README.md) e la cartella `documentazione/`.
+
+Che cosa contiene l'applicazione: dashboard con gli indicatori
 dell'archivio, inventario permanente (mappa dei file a livello di
-filesystem), dizionario dei pattern con builder guidato (senza espressioni
-regolari), scansione deterministica, consultazione raggruppata per file con
-coda di lavoro, triage per file (registro di segregazione), anagrafica
-utenti con accesso tramite PIN ed export XLSX.
+filesystem), dizionario dei pattern con costruzione guidata (senza
+espressioni regolari), scansione deterministica, consultazione raggruppata
+per file con coda di lavoro, triage per file (registro di segregazione),
+catalogo delle entità logiche, validazione delle bozze dell'agente,
+archivio logico con export di consegna, anagrafica utenti con accesso
+tramite PIN ed export XLSX.
 
 Tutta l'elaborazione avviene in locale: nessun contenuto lascia il computer.
+
+Nota sui nomi: il progetto si chiama Wikify. Alcuni identificatori tecnici
+conservano il nome originario del workshop ("Archivio Smart") per non
+rompere la compatibilità: il file del database `archivio_smart.db`, la
+variabile d'ambiente `ARCHIVIO_SMART_DATA` e i nomi delle tabelle.
 
 ## Requisiti
 
