@@ -44,7 +44,7 @@ consegna.
 | 06 | [Dataset di prova](documentazione/06_dataset_di_prova.md) | Su quale archivio si esercita chi non ha il caso reale |
 | 07 | [Avvio su Mac](documentazione/07_avvio_mac.md) | Come si installa e si avvia, passo per passo |
 | 08 | [Avvio su Windows](documentazione/08_avvio_windows.md) | Come si installa e si avvia, passo per passo |
-| 09 | [La skill del metodo](documentazione/09_installazione_skill.md) | Che cos'è la skill che accompagna il progetto e come si installa |
+| 09 | [La skill di analisi documentale](documentazione/09_installazione_skill.md) | Che cos'è la skill che accompagna il progetto e come si installa |
 
 ## Com'è fatto il progetto
 
@@ -54,7 +54,7 @@ consegna.
 | [app/](app/) | L'applicazione web locale: Flask e SQLite, i cinque moduli funzionali, il connettore MCP e la suite di verifica. Il suo [README](app/README.md) è il manuale d'uso dettagliato |
 | [scanner/](scanner/) | Lo scanner deterministico a riga di comando e il dizionario dei pattern: è la **fonte di verità** del dizionario, di cui l'applicazione conserva una copia di primo avvio |
 | [agente/](agente/) | Il contratto con l'agente di rilevazione: formato delle bozze e istruzioni operative. È la **fonte di verità**; `app/docs_agente/` ne contiene la copia scaricabile dall'applicazione |
-| [skill/](skill/) | La skill `metodo-d21-analisi-dati` per Claude Code: il metodo di analisi confezionato in forma richiamabile. Qui risiede la **fonte di verità**; l'installazione ne crea una copia nella configurazione personale, con la procedura del documento [09](documentazione/09_installazione_skill.md) |
+| [skill/](skill/) | La skill `analisi-documentale` per Claude Code: il metodo di analisi di un archivio documentale, confezionato in forma richiamabile. Qui risiede la **fonte di verità**; l'installazione ne crea una copia nella configurazione personale, con la procedura del documento [09](documentazione/09_installazione_skill.md) |
 | [brand/](brand/) | Identità visuale: logo e note di marchio |
 
 ## Che cos'è già stato costruito
