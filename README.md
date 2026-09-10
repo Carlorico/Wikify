@@ -10,56 +10,61 @@ oggi quasi sempre mancante, di qualunque sistema di consultazione intelligente.
 Tutta l'elaborazione avviene sul computer di chi la esegue: nessun contenuto dell'archivio
 lascia la macchina.
 
+> Questo repository contiene la sola applicazione e le guide di installazione. La
+> documentazione di analisi e di progetto, il materiale didattico e gli strumenti di
+> lavoro restano fuori: non sono necessari per installare né per eseguire Wikify.
+
 ---
 
-## Il problema da cui nasce
+## Installazione
 
-Un'azienda custodisce l'archivio storico delle proprie schede progetto: specifiche
-tecniche, manuali, dati di sperimentazione, parametri di configurazione, in formati
-eterogenei e distribuiti su centinaia di cartelle. L'archivio è competenza dell'ufficio
-tecnico, ma serve continuamente all'ufficio commerciale, che non avendo la competenza per
-consultarlo passa dai referenti tecnici. Ne deriva un collo di bottiglia: onere ricorrente
-da una parte, attesa dall'altra.
+Requisito unico: **Python 3.9 o superiore**.
 
-La richiesta arriva di norma già tradotta in soluzione: "serve un motore di ricerca",
-"serve un'AI che risponda alle domande". L'ipotesi da cui parte questo progetto è diversa:
-il problema non è la mancanza di uno strumento di ricerca, ma il fatto che
-**l'informazione non è mai stata razionalizzata**. Finché non si sa che cosa contengono i
-documenti, qualunque motore cerca nel disordine, e nessuno può dire quali contenuti siano
-esponibili a un servizio esterno.
+| Sistema | Guida |
+| --- | --- |
+| Mac | [Avvio su Mac](documentazione/07_avvio_mac.md) |
+| Windows | [Avvio su Windows](documentazione/08_avvio_windows.md) |
+| Linux (Ubuntu e derivate) | [Avvio su Linux](documentazione/10_avvio_linux.md) |
 
-## Come si legge questo progetto
+Le guide sono scritte per chi non ha familiarità con il terminale e coprono anche i
+problemi frequenti. In forma sintetica, dalla cartella `app`:
 
-I documenti in [documentazione/](documentazione/) sono numerati secondo l'ordine di
-lettura. Si possono percorrere in sequenza: raccontano il progetto dal problema alla
-consegna.
+```
+python3 -m venv .venv
+source .venv/bin/activate          # su Windows: .venv\Scripts\activate
+python3 -m pip install -r requirements.txt
+./avvia.sh                         # su Windows: avvia.bat
+```
 
-| # | Documento | Risponde alla domanda |
-|---|---|---|
-| 01 | [Contesto e problema](documentazione/01_contesto_e_problema.md) | Da dove nasce, chi ne soffre, quali domande deve reggere l'archivio |
-| 02 | [Requisiti e architettura](documentazione/02_requisiti_e_architettura.md) | Quali requisiti emergono e quale architettura ne consegue |
-| 03 | [Riservatezza: metodo A e metodo B](documentazione/03_riservatezza_metodo_A_B.md) | Perché il deterministico precede l'agentico, e come si qualifica ciò che è condivisibile |
-| 04 | [Progettazione dei moduli](documentazione/04_progettazione_moduli.md) | Come è progettato ciascun modulo, con schemi dati e viste |
-| 05 | [Stato dell'arte](documentazione/05_stato_dell_arte.md) | Che cosa esiste oggi, in numeri, e che cosa non è stato costruito |
-| 06 | [Dataset di prova](documentazione/06_dataset_di_prova.md) | Su quale archivio si esercita chi non ha il caso reale |
-| 07 | [Avvio su Mac](documentazione/07_avvio_mac.md) | Come si installa e si avvia, passo per passo |
-| 08 | [Avvio su Windows](documentazione/08_avvio_windows.md) | Come si installa e si avvia, passo per passo |
-| 09 | [La skill di analisi documentale](documentazione/09_installazione_skill.md) | Che cos'è la skill che accompagna il progetto e come si installa |
+Il server parte su `http://127.0.0.1:5000` e il browser si apre da solo. Per usare una
+porta diversa: `WIKIFY_PORT=5050 ./avvia.sh`.
 
-## Com'è fatto il progetto
+## Dove risiedono i dati
 
-| Cartella | Ruolo |
-|---|---|
-| [documentazione/](documentazione/) | I documenti di analisi e di progetto, numerati nell'ordine di lettura |
-| [app/](app/) | L'applicazione web locale: Flask e SQLite, i cinque moduli funzionali, il connettore MCP e la suite di verifica. Il suo [README](app/README.md) è il manuale d'uso dettagliato |
-| [scanner/](scanner/) | Lo scanner deterministico a riga di comando e il dizionario dei pattern: è la **fonte di verità** del dizionario, di cui l'applicazione conserva una copia di primo avvio |
-| [agente/](agente/) | Il contratto con l'agente di rilevazione: formato delle bozze e istruzioni operative. È la **fonte di verità**; `app/docs_agente/` ne contiene la copia scaricabile dall'applicazione |
-| [skill/](skill/) | La skill `analisi-documentale` per Claude Code: il metodo di analisi di un archivio documentale, confezionato in forma richiamabile. Qui risiede la **fonte di verità**; l'installazione ne crea una copia nella configurazione personale, con la procedura del documento [09](documentazione/09_installazione_skill.md) |
-| [brand/](brand/) | Identità visuale: logo e note di marchio |
+I dati di lavoro (la base dati con inventario, esiti di scansione, triage, catalogo e
+validazioni, la chiave di sessione, i file temporanei di import) risiedono in `dati/`
+dentro la cartella di progetto, indicata dalla variabile d'ambiente
+`ARCHIVIO_SMART_DATA` e valorizzata dagli script di avvio:
 
-## Che cos'è già stato costruito
+```
+dati/lavoro/    i dati prodotti dall'uso reale (nasce al primo avvio)
+dati/demo/      la base dati della dimostrazione guidata
+```
 
-Cinque moduli funzionali, in sequenza di dipendenza:
+La cartella `dati/` è esclusa dal repository: la separazione fra codice e dati resta, per
+versionamento anziché per collocazione fisica. Per collocare i dati altrove, per esempio
+su un disco dedicato, basta valorizzare la variabile prima dell'avvio:
+
+```
+ARCHIVIO_SMART_DATA=/srv/wikify/dati ./avvia.sh
+```
+
+Il database non va collocato su una condivisione di rete: SQLite non gestisce in modo
+affidabile il blocco dei file su montaggi remoti.
+
+## Che cosa contiene l'applicazione
+
+Sette ambiti funzionali, in sequenza di dipendenza:
 
 1. **Inventario e dashboard**: la mappa permanente dell'archivio, mantenuta a livello di
    filesystem e riallineata a ogni apertura. Nessun contenuto viene letto.
@@ -74,40 +79,16 @@ Cinque moduli funzionali, in sequenza di dipendenza:
 5. **Archivio logico**: il consolidamento che rende il documento un oggetto di prima
    classe: tipologia, aggancio all'entità, riservatezza, e l'export che costituisce la
    consegna verso la fase successiva.
+6. **Base deterministica**: le famiglie derivate dall'albero, gli articoli e la relazione
+   famiglia/articolo ricavata dal listino, lingua e datazione dei documenti, il controllo
+   di vigenza (quali documenti sono superati da note tecniche posteriori).
+7. **Consulta**: la wiki. Una scheda per famiglia generata dai dati, con due profili
+   (interno e condivisibile) e il corpus markdown pensato per i modelli linguistici.
 
-A questi si aggiungono le funzioni di servizio: anagrafica utenti con accesso tramite PIN,
+Il menu dell'applicazione organizza queste funzioni in cinque sezioni per mestiere:
+Conoscere, Strutturare, Sorvegliare, Estendere e consegnare, Consultare. A queste si
+aggiungono le funzioni di servizio: anagrafica utenti con accesso tramite PIN,
 manutenzione e reset dell'archivio.
-
-Lo stato in numeri, la lettura critica di ciò che manca e le metriche che orientano il
-seguito sono nel documento [05](documentazione/05_stato_dell_arte.md).
-
-## Come si avvia
-
-Requisiti: Python 3.9 o superiore. Poi, dalla cartella `app`:
-
-```
-python3 -m pip install -r requirements.txt
-./avvia.sh          # su Windows: avvia.bat
-```
-
-Il server parte su `http://127.0.0.1:5000` e il browser si apre da solo. La procedura
-completa, pensata per chi non ha familiarità con il terminale, è nei documenti
-[07](documentazione/07_avvio_mac.md) e [08](documentazione/08_avvio_windows.md).
-
-## Dove risiedono i dati
-
-I dati di lavoro (la base dati con inventario, esiti di scansione, triage, catalogo e
-validazioni, la chiave di sessione, i file temporanei di import) **non stanno in questa
-cartella**. Risiedono in `Wikify_dati`, cartella sorella, indicata dalla variabile
-d'ambiente `ARCHIVIO_SMART_DATA` e valorizzata dagli script di avvio:
-
-```
-Wikify/         il progetto: codice e documentazione
-Wikify_dati/    i dati prodotti dall'uso
-```
-
-La separazione è deliberata: consente di aggiornare o consegnare il progetto senza
-trasferire alcun contenuto dell'archivio analizzato.
 
 ## Che cosa Wikify non fa (e perché)
 
@@ -121,10 +102,11 @@ agentico proprio. Non è un ritardo, è una decisione:
   costo per archivio sarebbe un atto di fede.
 
 Wikify porta l'archivio al punto in cui quei tre passi diventano possibili, e ne consegna
-l'esito in un formato dichiarato: `wikify-archivio/1.0`.
+l'esito in un formato dichiarato: `wikify-archivio/1.1`.
 
 ---
 
-*Prototipo generato e integrato con il supporto di sistemi AI generativi, sotto la
-supervisione e l'architettura tecnica di Carlo Verdini (IT System Integrator & AI
+*Soluzione realizzata a fini didattici e dimostrativi, non candidabile a software di
+produzione. Prototipo generato e integrato con il supporto di sistemi AI generativi, sotto
+la supervisione e l'architettura tecnica di Carlo Verdini (IT System Integrator & AI
 Trainer).*

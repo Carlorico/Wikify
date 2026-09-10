@@ -116,19 +116,19 @@ esecuzione.
 ## 6. Dove finiscono i dati
 
 I dati di lavoro (database, chiave di sessione, file temporanei) risiedono
-in `Wikify_dati`, cartella **sorella** di `Wikify`, creata al primo avvio:
+in `dati/lavoro`, cartella **sorella** di `Wikify`, creata al primo avvio:
 
 ```
 Documents/
   Wikify/         il programma
-  Wikify_dati/    i dati prodotti dal programma
+  dati/lavoro/    i dati prodotti dal programma
 ```
 
 La separazione è voluta: consente di aggiornare il programma senza toccare
 i dati e di escludere questi ultimi da qualsiasi copia condivisa. Per
 azzerare tutto e ricominciare da capo esiste la funzione "Manutenzione" →
 "Reset archivio" dentro l'applicazione; in alternativa si può eliminare la
-cartella `Wikify_dati`, che verrà ricreata vuota al successivo avvio.
+cartella `dati/lavoro`, che verrà ricreata vuota al successivo avvio.
 
 ---
 
