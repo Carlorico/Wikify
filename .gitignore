@@ -1,9 +1,35 @@
-# Dati di lavoro dell'applicazione.
-# La cartella dati predefinita e' "Wikify_dati", sorella di questa cartella e
-# quindi gia' fuori dal repository; la riga seguente copre l'eventualita' che
-# l'app venga avviata senza ARCHIVIO_SMART_DATA (ripiego su app/data).
-data/
+# Il repository contiene la sola applicazione e le guide di installazione.
+# Tutto il resto del progetto vive su disco e resta fuori da qui.
+
+# Parametri e credenziali del server del committente: mai in repository.
+PARAMETRI_SERVER_CHEMITEC.txt
+
+# Dati di lavoro dell'applicazione: dentro il progetto, fuori dal repository.
+# dati/lavoro nasce al primo avvio; dati/demo e' la base dati della demo.
+dati/
 app/data/
+
+# Dati di prova e dati reali: mai in repository, mai nella consegna.
+Archivio Demo/
+Archivio_Chemitec/
+ZZZ_storico/
+
+# Materiale del docente e documentazione di analisi: restano su disco.
+\!!IINTERNO!!!/
+documentazione/01_*
+documentazione/02_*
+documentazione/03_*
+documentazione/04_*
+documentazione/05_*
+documentazione/06_*
+documentazione/09_*
+
+# Strumenti di lavoro e materiale collaterale, non parte dell'applicazione.
+strumenti/
+scanner/
+skill/
+agente/
+brand/
 
 # Scorie di Python
 __pycache__/
