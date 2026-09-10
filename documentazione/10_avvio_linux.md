@@ -128,16 +128,19 @@ WIKIFY_PORT=5050 ./avvia.sh
 ## 7. Dove finiscono i dati
 
 I dati di lavoro (database, chiave di sessione, file temporanei) risiedono
-in `dati/lavoro`, cartella **sorella** di `Wikify`, creata al primo avvio:
+in `dati/lavoro`, **dentro** la cartella del progetto, creata al primo avvio:
 
 ```
 applicazioni/
-  Wikify/         il programma
-  dati/lavoro/    i dati prodotti dal programma
+  Wikify/
+    app/            il programma
+    dati/lavoro/    i dati prodotti dal programma
 ```
 
-La separazione consente di aggiornare il programma senza toccare i dati e
-di escludere questi ultimi da qualsiasi copia condivisa.
+I dati stanno dentro il progetto ma fuori dal repository, esclusi tramite
+`.gitignore`: si aggiorna il programma con `git pull` senza toccarli, e non
+entrano in alcuna copia condivisa. Lo script di avvio stampa il percorso
+effettivo a ogni lancio, quindi in caso di dubbio si legge lì.
 
 Per collocare i dati altrove, per esempio su un disco dedicato, basta
 valorizzare la variabile prima dell'avvio:
