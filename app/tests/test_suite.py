@@ -28,7 +28,30 @@ import zipfile
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE)
 
-os.environ.setdefault("ARCHIVIO_SMART_DATA", tempfile.mkdtemp(prefix="asdata_test_"))
+# ---------------------------------------------------------------------------
+# Igiene delle cartelle temporanee: ogni mkdtemp della suite viene registrato
+# e rimosso a fine esecuzione. Senza questo presidio ogni giro completo
+# lasciava una ventina di cartelle orfane nella temporanea di sistema.
+# ---------------------------------------------------------------------------
+import atexit
+import shutil as _shutil
+
+_CARTELLE_TEMPORANEE = []
+
+
+def cartella_temporanea(prefix):
+    cartella = tempfile.mkdtemp(prefix=prefix)
+    _CARTELLE_TEMPORANEE.append(cartella)
+    return cartella
+
+
+@atexit.register
+def _pulisci_cartelle_temporanee():
+    for cartella in _CARTELLE_TEMPORANEE:
+        _shutil.rmtree(cartella, ignore_errors=True)
+
+
+os.environ.setdefault("ARCHIVIO_SMART_DATA", cartella_temporanea(prefix="asdata_test_"))
 
 from core import analisi as ana  # noqa: E402
 from core import db  # noqa: E402
@@ -43,7 +66,7 @@ sys.argv = sys.argv[:1]  # unittest non deve vedere i nostri argomenti
 
 def usa_dati_temporanei():
     """Sposta la cartella dati su una directory temporanea nuova."""
-    cartella = tempfile.mkdtemp(prefix="asdata_test_")
+    cartella = cartella_temporanea(prefix="asdata_test_")
     db.DATA_DIR = db.Path(cartella)
     db.DB_PATH = db.DATA_DIR / "archivio_smart.db"
     return cartella
@@ -51,7 +74,7 @@ def usa_dati_temporanei():
 
 def crea_archivio_sintetico():
     """Archivio di prova con casi limite (caratteri di controllo, formule...)."""
-    radice = tempfile.mkdtemp(prefix="arch_test_")
+    radice = cartella_temporanea(prefix="arch_test_")
     with open(os.path.join(radice, "documento.txt"), "w", encoding="utf-8") as f:
         f.write("promemoria \x01\x02 riservato interno \x1f con password: alfa123\n")
         f.write("=SOMMA(A1:A2) riga che sembra formula, password: beta456\n")
@@ -360,7 +383,8 @@ class TestMigrazione(unittest.TestCase):
         db.init_db()  # applica le migrazioni V2, V3, V4, V5, V6 e V7
 
         conn = db.get_connection()
-        self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 7)
+        self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0],
+                         len(db.MIGRAZIONI))
         tabelle = {r[0] for r in conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table'")}
         self.assertIn("utenti", tabelle)
@@ -401,7 +425,8 @@ class TestMigrazione(unittest.TestCase):
         db.init_db()  # applica le migrazioni V3, V4, V5, V6 e V7
 
         conn = db.get_connection()
-        self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 7)
+        self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0],
+                         len(db.MIGRAZIONI))
         tabelle = {r[0] for r in conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table'")}
         for t in (self.TABELLE_NUOVE_V3 + self.TABELLE_NUOVE_V4
@@ -447,7 +472,8 @@ class TestMigrazione(unittest.TestCase):
         db.init_db()  # applica le migrazioni V4, V5, V6 e V7
 
         conn = db.get_connection()
-        self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 7)
+        self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0],
+                         len(db.MIGRAZIONI))
         tabelle = {r[0] for r in conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table'")}
         for t in (self.TABELLE_NUOVE_V4 + self.TABELLE_NUOVE_V5
@@ -488,7 +514,8 @@ class TestMigrazione(unittest.TestCase):
         db.init_db()  # applica le migrazioni V5, V6 e V7
 
         conn = db.get_connection()
-        self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 7)
+        self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0],
+                         len(db.MIGRAZIONI))
         tabelle = {r[0] for r in conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table'")}
         for t in self.TABELLE_NUOVE_V5 + self.TABELLE_NUOVE_V6 + self.TABELLE_NUOVE_V7:
@@ -761,7 +788,7 @@ class TestInventarioDashboard(unittest.TestCase):
         # rimuovono file, l'originale non va toccato).
         origine = (ARCHIVIO_PROVA if ARCHIVIO_PROVA and os.path.isdir(ARCHIVIO_PROVA)
                    else crea_archivio_sintetico())
-        cls.radice = os.path.join(tempfile.mkdtemp(prefix="arch_inv_"), "archivio")
+        cls.radice = os.path.join(cartella_temporanea(prefix="arch_inv_"), "archivio")
         shutil.copytree(origine, cls.radice)
 
     @classmethod
@@ -983,10 +1010,17 @@ class TestSidebarPassword(unittest.TestCase):
 
     def test_01_voci_menu_in_ordine(self):
         testo, sidebar = self._sidebar()
-        voci = ["Dashboard", "Classificazione base", "Storico", "Dizionario",
-                "Catalogo", "Definizione entità", "Arricchimento dati",
-                "Validazione AI", "Perimetro e bozze", "Coda di revisione",
-                "Metriche", "Utenti", "Password", "Logout"]
+        voci = ["Dashboard",
+                "Conoscere", "Scansione e triage", "Dizionario riservatezza",
+                "Strutturare", "Entità e famiglie", "Arricchimento dati",
+                "Regole di tipologia", "Ricostruzione",
+                "Sorvegliare", "Vigenza", "Riconciliazione",
+                "Completezza per entità", "Esplora archivio",
+                "Estendere e consegnare", "Perimetro e bozze",
+                "Coda di revisione", "Metriche", "Impostazioni analisi",
+                "Export di consegna",
+                "Consultare",
+                "Utenti", "Password", "Logout"]
         posizioni = [sidebar.find(v) for v in voci]
         for voce, pos in zip(voci, posizioni):
             self.assertGreater(pos, -1, "voce mancante: %s" % voce)
@@ -999,6 +1033,13 @@ class TestSidebarPassword(unittest.TestCase):
         testo = r.get_data(as_text=True)
         self.assertIn('id="bottone-nuova-scansione"', testo)
         self.assertIn("Nuova scansione", testo)
+        # "Consolidamento" non compare piu' come voce di menu: la sua
+        # funzione primaria e' ora l'export, raggiungibile con altra voce
+        self.assertNotIn("Consolidamento", sidebar)
+        # la voce "Wiki delle famiglie" compare perche' il blueprint consulta
+        # e' registrato (fase D): la guardia sul menu si limita a verificarne
+        # l'esistenza, non a nasconderla
+        self.assertIn("Wiki delle famiglie", sidebar)
 
     def test_02_voce_attiva_evidenziata(self):
         _, sidebar = self._sidebar("/")
@@ -1006,15 +1047,15 @@ class TestSidebarPassword(unittest.TestCase):
         _, sidebar = self._sidebar("/utenti/anagrafica")
         self.assertRegex(sidebar,
                          r'class="voce-menu attiva\s*" href="/utenti/anagrafica"')
+        # Sezione Conoscere: Dizionario e Storico
         _, sidebar = self._sidebar("/dizionario/")
         self.assertRegex(sidebar,
                          r'class="voce-menu sotto-voce attiva\s*" href="/dizionario/"')
-        # La sezione Classificazione base risulta aperta ed evidenziata
         self.assertIn("<details class=\"sezione-menu\" open>", sidebar)
         _, sidebar = self._sidebar("/storico/")
         self.assertRegex(sidebar,
                          r'class="voce-menu sotto-voce attiva\s*" href="/storico/"')
-        # Sezione Catalogo: sotto-voce attiva e sezione auto-aperta
+        # Sezione Strutturare: Entità e famiglie, con sezione auto-aperta
         _, sidebar = self._sidebar("/catalogo/")
         self.assertRegex(sidebar,
                          r'class="voce-menu sotto-voce attiva\s*" href="/catalogo/"')
@@ -1023,10 +1064,36 @@ class TestSidebarPassword(unittest.TestCase):
         self.assertRegex(
             sidebar,
             r'class="voce-menu sotto-voce attiva\s*" href="/catalogo/arricchimento"')
-        # La voce Definizione entità non risulta attiva sull'arricchimento
+        # La voce Entità e famiglie non risulta attiva sull'arricchimento
         self.assertRegex(
             sidebar, r'class="voce-menu sotto-voce \s*" href="/catalogo/"')
-        # Sezione Validazione AI: sotto-voce attiva e sezione auto-aperta
+        # Regole di tipologia e Ricostruzione, spostate nella stessa sezione
+        _, sidebar = self._sidebar("/archivio/")
+        self.assertRegex(sidebar,
+                         r'class="voce-menu sotto-voce attiva\s*" href="/archivio/"')
+        self.assertIn("<details class=\"sezione-menu\" open>", sidebar)
+        _, sidebar = self._sidebar("/livello0/")
+        self.assertRegex(sidebar,
+                         r'class="voce-menu sotto-voce attiva\s*" href="/livello0/"')
+        self.assertIn("<details class=\"sezione-menu\" open>", sidebar)
+        # Sezione Sorvegliare: Vigenza, Riconciliazione, Completezza, Esplora
+        _, sidebar = self._sidebar("/livello0/vigenza")
+        self.assertRegex(sidebar,
+                         r'class="voce-menu sotto-voce attiva\s*" href="/livello0/vigenza"')
+        self.assertIn("<details class=\"sezione-menu\" open>", sidebar)
+        _, sidebar = self._sidebar("/livello0/riconciliazione")
+        self.assertRegex(
+            sidebar,
+            r'class="voce-menu sotto-voce attiva\s*" href="/livello0/riconciliazione"')
+        _, sidebar = self._sidebar("/archivio/completezza")
+        self.assertRegex(
+            sidebar,
+            r'class="voce-menu sotto-voce attiva\s*" href="/archivio/completezza"')
+        _, sidebar = self._sidebar("/archivio/esplora")
+        self.assertRegex(
+            sidebar,
+            r'class="voce-menu sotto-voce attiva\s*" href="/archivio/esplora"')
+        # Sezione Estendere e consegnare: Validazione AI ed Export di consegna
         _, sidebar = self._sidebar("/validazione/perimetro")
         self.assertRegex(
             sidebar,
@@ -1044,6 +1111,37 @@ class TestSidebarPassword(unittest.TestCase):
         self.assertRegex(
             sidebar,
             r'class="voce-menu sotto-voce attiva\s*" href="/validazione/metriche"')
+        _, sidebar = self._sidebar("/archivio/consolidamento")
+        self.assertRegex(
+            sidebar,
+            r'class="voce-menu sotto-voce attiva\s*" href="/archivio/consolidamento"')
+        self.assertIn("<details class=\"sezione-menu\" open>", sidebar)
+
+    def test_06_descrittive_presenti_per_sezione(self):
+        """Ogni sezione porta, subito sotto il titolo, una descrittiva di
+        due righe su a che cosa serve e che cosa deve essere gia' stato
+        fatto."""
+        _, sidebar = self._sidebar()
+        descrittive = [
+            "Che cosa contiene l'archivio e che cosa è sensibile",
+            "Gli oggetti del dominio e i loro legami",
+            "Misure che restano vive",
+            "L'agente lavora sul solo perimetro condivisibile",
+            "La wiki: schede di famiglia generate dai dati",
+        ]
+        for testo_atteso in descrittive:
+            self.assertIn(testo_atteso, sidebar)
+        self.assertEqual(sidebar.count("menu-descrittiva"), 5)
+
+    def test_07_consolidamento_non_e_voce_ma_rotta_viva(self):
+        """La rotta resta raggiungibile: la sua funzione primaria e' ora lo
+        stato e l'export, non piu' l'ingresso di menu."""
+        r = self.client.get("/archivio/consolidamento")
+        self.assertEqual(r.status_code, 200)
+        testo = r.get_data(as_text=True)
+        self.assertIn("Ricostruzione", testo)
+        _, sidebar = self._sidebar()
+        self.assertNotIn("Consolidamento", sidebar)
 
     def test_03_cambio_pin(self):
         # PIN attuale errato rifiutato
@@ -1108,6 +1206,64 @@ class TestSidebarPassword(unittest.TestCase):
         self.client.post("/utenti/accesso", data={"utente": "1", "pin": "5678"})
 
 
+class TestCatalogoFamiglieAlbero(unittest.TestCase):
+    """Riquadro "Famiglie dall'albero" nella pagina di definizione entità:
+    la sincronizzazione crea le famiglie sull'archivio e riporta i
+    conteggi nel flash."""
+
+    @classmethod
+    def setUpClass(cls):
+        usa_dati_temporanei()
+        from app import create_app
+        cls.app = create_app()
+        cls.app.config["TESTING"] = True
+        cls.client = cls.app.test_client()
+        cls.client.post("/utenti/benvenuto/crea",
+                        data={"nome": "Carlo Verdini", "pin": "1234"})
+        from core import livello0
+        cls.radice = crea_albero_vigenza()
+        conn = db.get_connection()
+        livello0.ricostruisci(conn, cls.radice)
+        conn.close()
+
+    def test_01_sincronizza_crea_famiglie_e_riporta_i_conteggi(self):
+        r = self.client.post("/catalogo/famiglie-albero",
+                             follow_redirects=True)
+        self.assertEqual(r.status_code, 200)
+        testo = r.get_data(as_text=True)
+        # l'apostrofo del flash viene reso come entità HTML dall'escape
+        # automatico del template: la verifica evita quel confine
+        self.assertIn("Famiglie dall", testo)
+        self.assertIn("albero:", testo)
+        self.assertIn("trovate", testo)
+        self.assertIn("nuove", testo)
+        conn = db.get_connection()
+        n = conn.execute(
+            "SELECT COUNT(*) FROM entita e JOIN tipi_entita t "
+            "ON t.id = e.tipo_id WHERE t.nome = 'Famiglia' "
+            "AND e.stato = 'attiva'").fetchone()[0]
+        conn.close()
+        self.assertGreater(n, 0)
+        self.assertIn("Famiglie attive: %d" % n, testo)
+
+    def test_02_seconda_esecuzione_non_duplica(self):
+        self.client.post("/catalogo/famiglie-albero")
+        conn = db.get_connection()
+        prima = conn.execute(
+            "SELECT COUNT(*) FROM entita e JOIN tipi_entita t "
+            "ON t.id = e.tipo_id WHERE t.nome = 'Famiglia' "
+            "AND e.stato = 'attiva'").fetchone()[0]
+        conn.close()
+        self.client.post("/catalogo/famiglie-albero")
+        conn = db.get_connection()
+        dopo = conn.execute(
+            "SELECT COUNT(*) FROM entita e JOIN tipi_entita t "
+            "ON t.id = e.tipo_id WHERE t.nome = 'Famiglia' "
+            "AND e.stato = 'attiva'").fetchone()[0]
+        conn.close()
+        self.assertEqual(prima, dopo)
+
+
 def crea_cartella_progetto(radice, nome, file_nome="nota.txt"):
     percorso = os.path.join(radice, nome)
     os.makedirs(percorso, exist_ok=True)
@@ -1130,7 +1286,7 @@ class TestCatalogoDefinizione(unittest.TestCase):
                         data={"nome": "Carlo Verdini", "pin": "1234"})
         # Copia di lavoro dell'archivio di prova con le cartelle progetto e
         # due cartelle che generano un conflitto di chiave (stessa "P-010").
-        cls.radice = os.path.join(tempfile.mkdtemp(prefix="arch_cat_"),
+        cls.radice = os.path.join(cartella_temporanea(prefix="arch_cat_"),
                                   "archivio")
         if ARCHIVIO_PROVA and os.path.isdir(ARCHIVIO_PROVA):
             shutil.copytree(ARCHIVIO_PROVA, cls.radice)
@@ -1332,7 +1488,7 @@ class TestCatalogoArricchimento(unittest.TestCase):
         cls.client = cls.app.test_client()
         cls.client.post("/utenti/benvenuto/crea",
                         data={"nome": "Carlo Verdini", "pin": "1234"})
-        cls.radice = os.path.join(tempfile.mkdtemp(prefix="arch_arr_"),
+        cls.radice = os.path.join(cartella_temporanea(prefix="arch_arr_"),
                                   "archivio")
         os.makedirs(cls.radice)
         for nome in ("P-001 Impianto Alfa", "P-002 Impianto Beta",
@@ -1982,7 +2138,7 @@ class TestValidazioneCoda(unittest.TestCase):
         cls.client.post("/utenti/benvenuto/crea",
                         data={"nome": "Carlo Verdini", "pin": "1234"})
         # Archivio con un docx reale nella cartella progetto
-        cls.radice = os.path.join(tempfile.mkdtemp(prefix="arch_val_"),
+        cls.radice = os.path.join(cartella_temporanea(prefix="arch_val_"),
                                   "archivio")
         os.makedirs(os.path.join(cls.radice, cls.CARTELLA))
         cls.par1 = "Manuale di installazione Sonda TX100"
@@ -2394,7 +2550,8 @@ class TestMigrazioneV6(unittest.TestCase):
         db.init_db()  # applica le migrazioni V6 e V7
 
         conn = db.get_connection()
-        self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 7)
+        self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0],
+                         len(db.MIGRAZIONI))
         tabelle = {r[0] for r in conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table'")}
         self.assertIn("sessioni_analisi", tabelle)
@@ -2454,7 +2611,8 @@ class TestMigrazioneV7(unittest.TestCase):
         db.init_db()  # applica la sola migrazione V7
 
         conn = db.get_connection()
-        self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 7)
+        self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0],
+                         len(db.MIGRAZIONI))
         tabelle = {r[0] for r in conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table'")}
         self.assertIn("documenti", tabelle)
@@ -2586,7 +2744,7 @@ class TestMCPConnettore(unittest.TestCase):
         cls.client = cls.app.test_client()
         cls.client.post("/utenti/benvenuto/crea",
                         data={"nome": "Carlo Verdini", "pin": "1234"})
-        cls.radice = os.path.join(tempfile.mkdtemp(prefix="arch_mcp_"),
+        cls.radice = os.path.join(cartella_temporanea(prefix="arch_mcp_"),
                                   "archivio")
         os.makedirs(cls.radice)
         cls.cartelle = ["P-001 Impianto Alfa", "P-002 Impianto Beta",
@@ -2889,7 +3047,7 @@ class TestServerMCP(unittest.TestCase):
         self.assertIn("errore", esito)
 
     def test_04_flusso_completo_diretto(self):
-        radice = os.path.join(tempfile.mkdtemp(prefix="arch_srv_"),
+        radice = os.path.join(cartella_temporanea(prefix="arch_srv_"),
                               "archivio")
         os.makedirs(os.path.join(radice, "P-900 Prova"))
         testo_atteso = "Contenuto di prova per il server MCP diretto."
@@ -3195,7 +3353,7 @@ class TestArchivioRegoleTipologia(unittest.TestCase):
         cls.client = cls.app.test_client()
         cls.client.post("/utenti/benvenuto/crea",
                         data={"nome": "Carlo Verdini", "pin": "1234"})
-        cls.radice = os.path.join(tempfile.mkdtemp(prefix="arch_reg_"),
+        cls.radice = os.path.join(cartella_temporanea(prefix="arch_reg_"),
                                   "archivio")
         os.makedirs(cls.radice)
         crea_cartella_progetto(cls.radice, "P-001 Impianto Alfa",
@@ -3333,7 +3491,7 @@ class TestArchivioConsolidamento(unittest.TestCase):
         cls.client = cls.app.test_client()
         cls.client.post("/utenti/benvenuto/crea",
                         data={"nome": "Carlo Verdini", "pin": "1234"})
-        cls.radice = os.path.join(tempfile.mkdtemp(prefix="arch_cons_"),
+        cls.radice = os.path.join(cartella_temporanea(prefix="arch_cons_"),
                                   "archivio")
         os.makedirs(cls.radice)
         crea_cartella_progetto(cls.radice, cls.CARTELLA_ALFA,
@@ -3560,7 +3718,9 @@ class TestArchivioConsolidamento(unittest.TestCase):
         r = self.client.get("/archivio/export/archivio_logico.json")
         self.assertEqual(r.status_code, 200)
         dati = json.loads(r.get_data(as_text=True))
-        self.assertEqual(dati["formato"], "wikify-archivio/1.0")
+        from core import archivio as arc
+        self.assertEqual(dati["formato"], arc.FORMATO_EXPORT)
+        self.assertEqual(dati["formato"], "wikify-archivio/1.1")
         entita = {e["chiave"]: e for e in dati["entita"]}
         self.assertIn("P-001", entita)
         percorsi = {d["percorso"] for d in entita["P-001"]["documenti"]}
@@ -3634,6 +3794,1236 @@ class TestCoerenzaCopieGenerate(unittest.TestCase):
     def test_03_dizionario_seed_allineato_allo_scanner(self):
         self._confronta("scanner/dizionario_pattern.yaml",
                         "dizionario_seed.yaml")
+
+
+
+class TestMigrazioneV8(unittest.TestCase):
+    """Livello 0: retrocompatibilita' della migrazione V8. Un db V7 con
+    inventario, catalogo, documenti e attributi migra senza perdite; le
+    tabelle nuove nascono vuote e le colonne aggiunte compaiono sulle righe
+    gia' esistenti con i valori predefiniti previsti dalla progettazione."""
+
+    CONTROLLATE = ("utenti", "impostazioni", "inventario_file", "tipi_entita",
+                   "entita", "importazioni", "attributi_entita", "documenti",
+                   "regole_tipologia")
+    NUOVE = ("relazioni_entita", "documenti_entita", "regole_estrazione",
+             "segnalazioni_vigenza")
+
+    def _prepara_db_v7(self, cartella):
+        percorso = os.path.join(cartella, "archivio_smart.db")
+        conn = sqlite3.connect(percorso)
+        for schema in db.MIGRAZIONI[:7]:
+            conn.executescript(schema)
+        conn.execute("PRAGMA user_version = 7")
+        conn.execute("INSERT INTO utenti (nome, pin, attivo, data_creazione) "
+                     "VALUES ('Carlo', 'aa$bb', 1, '01/06/2026 09:00')")
+        conn.execute("INSERT INTO impostazioni (chiave, valore) "
+                     "VALUES ('radice_archivio', '/vecchio')")
+        conn.execute("INSERT INTO inventario_file (percorso_rel, "
+                     "cartella_progetto, estensione, stato) "
+                     "VALUES ('S611 D/DATA SHEETS/ds.pdf', 'S611 D', "
+                     "'.pdf', 'presente')")
+        conn.execute("INSERT INTO tipi_entita (nome, criterio_json, "
+                     "data_creazione, stato) VALUES ('Famiglia', '{}', "
+                     "'01/06/2026 09:00', 'attivo')")
+        conn.execute("INSERT INTO entita (tipo_id, chiave, cartella_origine, "
+                     "stato) VALUES (1, 'S611 D', 'S611 D', 'attiva')")
+        conn.execute("INSERT INTO importazioni (data, nome_file, "
+                     "tipo_entita_id, n_righe) VALUES ('01/06/2026 09:00', "
+                     "'listino.xlsx', 1, 3)")
+        conn.execute("INSERT INTO attributi_entita (entita_id, "
+                     "nome_attributo, valore, importazione_id, data) "
+                     "VALUES (1, 'codice_articolo', '6200010077', 1, "
+                     "'01/06/2026 09:00')")
+        conn.execute("INSERT INTO regole_tipologia (nome, tipologia, "
+                     "criterio_json, priorita, attiva) "
+                     "VALUES ('schede', 'scheda_tecnica', '{}', 1, 1)")
+        conn.execute("INSERT INTO documenti (percorso_rel, cartella_progetto, "
+                     "entita_id, tipologia, tipologia_origine, riservatezza) "
+                     "VALUES ('S611 D/DATA SHEETS/ds.pdf', 'S611 D', 1, "
+                     "'scheda_tecnica', 'regola', 'Condivisibile')")
+        conn.commit()
+        conn.close()
+
+    def test_01_migrazione_da_v7_senza_perdite(self):
+        cartella = usa_dati_temporanei()
+        self._prepara_db_v7(cartella)
+        conn = db.get_connection()
+        self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 7)
+        prima = {t: conn.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0]
+                 for t in self.CONTROLLATE}
+        conn.close()
+
+        db.init_db()  # applica la sola migrazione V8
+
+        conn = db.get_connection()
+        self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0],
+                         len(db.MIGRAZIONI))
+        dopo = {t: conn.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0]
+                for t in self.CONTROLLATE}
+        self.assertEqual(prima, dopo)  # nessuna perdita di dati
+        tabelle = {r[0] for r in conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'")}
+        for nome in self.NUOVE:
+            self.assertIn(nome, tabelle)
+            self.assertEqual(conn.execute("SELECT COUNT(*) FROM %s" % nome
+                                          ).fetchone()[0], 0)
+        conn.close()
+
+    def test_02_valori_predefiniti_sulle_righe_esistenti(self):
+        """Le colonne aggiunte compaiono sulle righe gia' presenti con i
+        valori decisi in progettazione. In particolare la visibilita' di un
+        attributo nasce 'interna' e non 'pubblica': il non ancora qualificato
+        si tratta come riservato."""
+        cartella = usa_dati_temporanei()
+        self._prepara_db_v7(cartella)
+        db.init_db()
+        conn = db.get_connection()
+
+        doc = conn.execute("SELECT * FROM documenti WHERE id = 1").fetchone()
+        self.assertEqual(doc["lingua"], "")
+        self.assertEqual(doc["data_documento"], "")
+        self.assertEqual(doc["revisione"], "")
+        self.assertEqual(doc["stato_vigenza"], "non_valutato")
+        # il legame prevalente della versione 1.0 sopravvive intatto
+        self.assertEqual(doc["entita_id"], 1)
+        self.assertEqual(doc["tipologia"], "scheda_tecnica")
+
+        ent = conn.execute("SELECT * FROM entita WHERE id = 1").fetchone()
+        self.assertEqual(ent["origine"], "cartella")
+
+        att = conn.execute("SELECT * FROM attributi_entita WHERE id = 1"
+                           ).fetchone()
+        self.assertEqual(att["origine"], "import")
+        self.assertEqual(att["regola_id"], 0)
+        self.assertEqual(att["visibilita"], "interna")
+        conn.close()
+
+    def test_03_relazioni_fra_entita_e_unicita(self):
+        """La relazione generica regge famiglia -> articolo e non ammette
+        duplicati a parita' di tipo, estremi e importazione."""
+        cartella = usa_dati_temporanei()
+        self._prepara_db_v7(cartella)
+        db.init_db()
+        conn = db.get_connection()
+        conn.execute("INSERT INTO entita (tipo_id, chiave, origine, stato) "
+                     "VALUES (1, '6200010077', 'import', 'attiva')")
+        articolo = conn.execute("SELECT id FROM entita WHERE chiave = "
+                                "'6200010077'").fetchone()[0]
+        conn.execute("INSERT INTO relazioni_entita (tipo_relazione, "
+                     "entita_da_id, entita_a_id, origine, importazione_id) "
+                     "VALUES ('raccoglie', 1, ?, 'sezione_listino', 1)",
+                     (articolo,))
+        conn.commit()
+        with self.assertRaises(sqlite3.IntegrityError):
+            conn.execute("INSERT INTO relazioni_entita (tipo_relazione, "
+                         "entita_da_id, entita_a_id, origine, "
+                         "importazione_id) VALUES ('raccoglie', 1, ?, "
+                         "'manuale', 1)", (articolo,))
+        conn.rollback()
+        self.assertEqual(conn.execute(
+            "SELECT COUNT(*) FROM relazioni_entita").fetchone()[0], 1)
+        conn.close()
+
+    def test_04_documento_su_piu_entita_e_cascata(self):
+        """Un documento si aggancia a piu' entita' (nota trasversale); la
+        cancellazione del documento porta con se' i collegamenti, mentre un
+        entita_id non piu' esistente non impedisce la lettura, perche' il
+        collegamento e' derivato e non vincolato."""
+        cartella = usa_dati_temporanei()
+        self._prepara_db_v7(cartella)
+        db.init_db()
+        conn = db.get_connection()
+        conn.execute("INSERT INTO entita (tipo_id, chiave, stato) "
+                     "VALUES (1, 'K270', 'attiva')")
+        conn.execute("INSERT INTO documenti (percorso_rel, tipologia) VALUES "
+                     "('Technical Release Note/TN.04-25.pdf', 'nota_tecnica')")
+        nota = conn.execute("SELECT id FROM documenti WHERE tipologia = "
+                            "'nota_tecnica'").fetchone()[0]
+        for entita_id, prevalente in ((1, 1), (2, 0), (999, 0)):
+            conn.execute("INSERT INTO documenti_entita (documento_id, "
+                         "entita_id, prevalente, origine) VALUES (?, ?, ?, "
+                         "'nome_file')", (nota, entita_id, prevalente))
+        conn.commit()
+        self.assertEqual(conn.execute(
+            "SELECT COUNT(*) FROM documenti_entita WHERE documento_id = ?",
+            (nota,)).fetchone()[0], 3)
+        # l'entita' inesistente non impedisce la lettura
+        self.assertEqual(conn.execute(
+            "SELECT COUNT(*) FROM documenti_entita WHERE entita_id = 999"
+            ).fetchone()[0], 1)
+        conn.execute("DELETE FROM documenti WHERE id = ?", (nota,))
+        conn.commit()
+        self.assertEqual(conn.execute(
+            "SELECT COUNT(*) FROM documenti_entita").fetchone()[0], 0)
+        conn.close()
+
+    def test_05_disposizione_umana_sulla_vigenza(self):
+        """La segnalazione di vigenza e' unica per coppia documento/causa: il
+        ricalcolo non puo' duplicarla, e la disposizione umana registrata vi
+        sopravvive."""
+        cartella = usa_dati_temporanei()
+        self._prepara_db_v7(cartella)
+        db.init_db()
+        conn = db.get_connection()
+        conn.execute("INSERT INTO segnalazioni_vigenza (entita_id, "
+                     "documento_id, causa_documento_id, lingua, "
+                     "scarto_giorni, stato, nota) VALUES (1, 1, 2, 'ITA', "
+                     "241, 'ignorata', 'variante non commercializzata')")
+        conn.commit()
+        with self.assertRaises(sqlite3.IntegrityError):
+            conn.execute("INSERT INTO segnalazioni_vigenza (entita_id, "
+                         "documento_id, causa_documento_id) "
+                         "VALUES (1, 1, 2)")
+        conn.rollback()
+        riga = conn.execute("SELECT * FROM segnalazioni_vigenza").fetchone()
+        self.assertEqual(riga["stato"], "ignorata")
+        self.assertEqual(riga["nota"], "variante non commercializzata")
+        conn.close()
+
+
+
+def crea_albero_livello0():
+    """Albero di prova con le quattro forme di annidamento rilevate sul caso
+    reale: categoria con sottocategoria, categoria con famiglia diretta,
+    famiglia senza sottocartella di tipologia, cartelle piatte di primo
+    livello che non sono famiglie."""
+    radice = cartella_temporanea(prefix="arch_l0_")
+
+    def scrivi(*parti):
+        percorso = os.path.join(radice, *parti)
+        os.makedirs(os.path.dirname(percorso), exist_ok=True)
+        with open(percorso, "w", encoding="utf-8") as f:
+            f.write("documento di prova\n")
+
+    scrivi("SENSORS", "CONDUCTIVITY", "S611 D", "DATA SHEETS", "ds.txt")
+    scrivi("SENSORS", "CONDUCTIVITY", "S611 D", "OPERATION MANUALS", "om.txt")
+    scrivi("SENSORS", "CONDUCTIVITY", "S611 DIG N", "DATA SHEETS", "ds.txt")
+    scrivi("SENSORS", "MULTIPARAMETRIC", "S694 N", "DATA SHEETS", "ds.txt")
+    scrivi("CONTROLLERS", "K210", "DATA SHEETS", "ds.txt")
+    scrivi("PORTABLE UNITS", "P510", "scheda.txt")     # senza tipologia
+    scrivi("PRODUCT CATALOGUE", "catalogo.txt")        # primo livello
+    scrivi("Technical Release Note", "TN.01-25.txt")   # primo livello
+    return radice
+
+
+def crea_listino_prova():
+    """Listino a due fogli con le patologie da riprodurre: righe di sezione
+    prive di codice, intestazione non allineata sul secondo foglio, sigla
+    scritta senza spazio, blocco di ricambi senza famiglia, codice ripetuto
+    con descrizione divergente."""
+    import openpyxl
+    percorso = os.path.join(cartella_temporanea(prefix="listino_l0_"),
+                            "listino_prova.xlsx")
+    wb = openpyxl.Workbook()
+    wb.remove(wb.active)
+
+    ws = wb.create_sheet("S600")
+    for riga in [
+            ("Code", "Description"),
+            ("", "S611 D conductivity cell"),
+            ("6200000001", "S611 D cell PVC body"),
+            ("6200000002", "S611 D cell PTFE body"),
+            ("", "S611 DIG N conductivity cell"),
+            ("6200000003", "S611 DIG N cell"),
+            ("", "S694N multiparametric probe"),
+            ("6200000004", "S694N probe"),
+            ("", "Spare parts and service kits"),
+            ("6200000005", "Service kit")]:
+        ws.append(riga)
+
+    ws2 = wb.create_sheet("70 Series")
+    for riga in [
+            ("Price list 2026", ""),
+            ("Code", "Description"),
+            ("", "K210 process controller"),
+            ("6200000006", "K210 controller two relays"),
+            ("6200000006", "K210 controller, special version")]:
+        ws2.append(riga)
+    wb.save(percorso)
+    return percorso
+
+
+class TestLivello0Famiglie(unittest.TestCase):
+    """Livello 0: riconoscimento delle famiglie dall'albero, con una regola
+    che non dipende da un livello fisso di profondita'."""
+
+    @classmethod
+    def setUpClass(cls):
+        usa_dati_temporanei()
+        db.init_db()
+        cls.radice = crea_albero_livello0()
+        from core import inventario
+        conn = db.get_connection()
+        inventario.inventario_iniziale(conn, cls.radice)
+        conn.close()
+
+    def test_01_riconosce_le_famiglie_a_profondita_diverse(self):
+        from core import livello0
+        conn = db.get_connection()
+        trovate = {f["chiave"]: f for f in livello0.famiglie_da_inventario(conn)}
+        conn.close()
+        self.assertEqual(sorted(trovate),
+                         ["K210", "P510", "S611 D", "S611 DIG N", "S694 N"])
+        # la famiglia si riconosce dal marcatore oppure dai documenti diretti
+        self.assertTrue(trovate["S611 D"]["con_marcatore"])
+        self.assertFalse(trovate["P510"]["con_marcatore"])
+        # e sta a livelli diversi senza che questo la escluda
+        self.assertEqual(trovate["S611 D"]["livello"], 3)
+        self.assertEqual(trovate["K210"]["livello"], 2)
+
+    def test_02_esclude_categorie_tipologie_e_cartelle_piatte(self):
+        from core import livello0
+        conn = db.get_connection()
+        chiavi = {f["chiave"] for f in livello0.famiglie_da_inventario(conn)}
+        conn.close()
+        for escluso in ("SENSORS", "CONDUCTIVITY", "CONTROLLERS",
+                        "PORTABLE UNITS", "DATA SHEETS", "OPERATION MANUALS",
+                        "PRODUCT CATALOGUE", "Technical Release Note"):
+            self.assertNotIn(escluso, chiavi)
+
+    def test_03_sincronizzazione_non_distruttiva(self):
+        from core import livello0
+        conn = db.get_connection()
+        esito = livello0.sincronizza_famiglie(conn)
+        self.assertEqual(esito["trovate"], 5)
+        self.assertEqual(esito["nuove"], 5)
+        # rieseguire non duplica e non crea nulla di nuovo
+        secondo = livello0.sincronizza_famiglie(conn)
+        self.assertEqual(secondo["nuove"], 0)
+        self.assertEqual(
+            conn.execute("SELECT COUNT(*) FROM entita WHERE tipo_id = ?",
+                         (esito["tipo_id"],)).fetchone()[0], 5)
+        self.assertEqual(
+            conn.execute("SELECT origine FROM entita WHERE chiave = 'K210'"
+                         ).fetchone()[0], "cartella")
+        conn.close()
+
+
+class TestLivello0Abbinamento(unittest.TestCase):
+    """Livello 0: la regola di abbinamento fra riga di sezione e famiglia.
+    Cio' che non si abbina non viene forzato."""
+
+    CHIAVI = ["S611 D", "S611 DIG N", "S694", "S694 N", "K210",
+              "S611 IND - S611 IND HT"]
+
+    def _abbina(self, testo):
+        from core import livello0
+        return livello0.abbina_famiglia(testo, self.CHIAVI)
+
+    def test_01_abbinamento_esatto(self):
+        self.assertEqual(self._abbina("S611 D conductivity cell"),
+                         ("S611 D", "esatto"))
+
+    def test_02_vince_la_corrispondenza_piu_lunga(self):
+        """'S611 D' e' prefisso di 'S611 DIG N': senza la regola della
+        corrispondenza piu' lunga la sezione finirebbe sulla famiglia
+        sbagliata."""
+        self.assertEqual(self._abbina("S611 DIG N conductivity cell"),
+                         ("S611 DIG N", "esatto"))
+
+    def test_03_sigla_scritta_senza_spazio(self):
+        """La cartella dice 'S694 N', il listino dice 'S694N': il secondo
+        passaggio ignora gli spazi, e non deve pescare la famiglia 'S694'."""
+        self.assertEqual(self._abbina("S694N multiparametric probe"),
+                         ("S694 N", "normalizzato"))
+        self.assertEqual(self._abbina("S694 multiparametric probe"),
+                         ("S694", "esatto"))
+
+    def test_04_nessun_abbinamento_non_viene_forzato(self):
+        """La cartella che contiene due famiglie nel nome non trova riscontro:
+        l'esito corretto e' l'assenza di abbinamento, non un aggancio
+        arbitrario."""
+        self.assertEqual(self._abbina("S611 IND conductivity cell"),
+                         (None, "nessuna"))
+        self.assertEqual(self._abbina("Spare parts and service kits"),
+                         (None, "nessuna"))
+
+    def test_05_non_spezza_un_numero_a_meta(self):
+        chiave, esito = self._abbina("K2100 extended controller")
+        self.assertIsNone(chiave)
+        self.assertEqual(esito, "nessuna")
+
+
+class TestLivello0Listino(unittest.TestCase):
+    """Livello 0: import del listino, relazione famiglia/articolo ricavata
+    dalle righe di sezione, misura di copertura in entrambe le direzioni."""
+
+    @classmethod
+    def setUpClass(cls):
+        usa_dati_temporanei()
+        db.init_db()
+        cls.radice = crea_albero_livello0()
+        cls.listino = crea_listino_prova()
+        from core import inventario, livello0
+        conn = db.get_connection()
+        inventario.inventario_iniziale(conn, cls.radice)
+        livello0.sincronizza_famiglie(conn)
+        cls.esito = livello0.importa_listino(conn, cls.listino)
+        cls.misura = livello0.misura_copertura(conn)
+        conn.close()
+
+    def test_01_sezioni_e_articoli_riconosciuti(self):
+        c = self.esito["conteggi"]
+        self.assertEqual(c["sezioni"], 5)          # quattro su S600, una su 70 Series
+        self.assertEqual(c["sezioni_abbinate"], 4)  # i ricambi non si abbinano
+        self.assertEqual(c["righe_articolo"], 7)   # righe lette, duplicato compreso
+        self.assertEqual(c["nuovi_articoli"], 6)   # entita' distinte create
+        self.assertEqual(c["articoli_orfani"], 1)
+
+    def test_02_intestazione_non_allineata_riconosciuta(self):
+        """Il secondo foglio ha il titolo sulla prima riga e l'intestazione
+        sulla seconda: va cercata, non presunta."""
+        self.assertEqual(self.esito["fogli"]["S600"]["intestazione_riga"], 1)
+        self.assertEqual(
+            self.esito["fogli"]["70 Series"]["intestazione_riga"], 2)
+
+    def test_03_relazione_dalle_righe_di_sezione(self):
+        conn = db.get_connection()
+        coppie = {(r["famiglia"], r["articolo"]) for r in conn.execute(
+            "SELECT f.chiave AS famiglia, a.chiave AS articolo "
+            "FROM relazioni_entita r "
+            "JOIN entita f ON f.id = r.entita_da_id "
+            "JOIN entita a ON a.id = r.entita_a_id "
+            "WHERE r.tipo_relazione = 'raccoglie'")}
+        conn.close()
+        self.assertIn(("S611 D", "6200000001"), coppie)
+        self.assertIn(("S611 D", "6200000002"), coppie)
+        self.assertIn(("S694 N", "6200000004"), coppie)
+        self.assertIn(("K210", "6200000006"), coppie)
+        # il ricambio resta scoperto: nessuna famiglia lo raccoglie
+        self.assertNotIn("6200000005", {a for _, a in coppie})
+
+    def test_04_anomalie_registrate_e_non_risolte(self):
+        tipi = [t for t, _, _ in self.esito["anomalie"]]
+        self.assertIn("sezione_senza_famiglia", tipi)
+        self.assertIn("articolo_senza_famiglia", tipi)
+        self.assertIn("codice_duplicato_divergente", tipi)
+        conn = db.get_connection()
+        salvate = conn.execute(
+            "SELECT COUNT(*) FROM anomalie_import WHERE importazione_id = ?",
+            (self.esito["importazione_id"],)).fetchone()[0]
+        # la descrizione divergente non sovrascrive la prima
+        valore = conn.execute(
+            "SELECT valore FROM attributi_entita a JOIN entita e "
+            "ON e.id = a.entita_id WHERE e.chiave = '6200000006'").fetchone()[0]
+        conn.close()
+        self.assertEqual(salvate, len(self.esito["anomalie"]))
+        self.assertEqual(valore, "K210 controller two relays")
+
+    def test_05_misura_di_copertura_nelle_due_direzioni(self):
+        m = self.misura
+        self.assertEqual(m["famiglie"], 5)
+        self.assertEqual(m["famiglie_con_articoli"], 4)
+        self.assertEqual([f["chiave"] for f in m["famiglie_senza_articoli"]],
+                         ["P510"])
+        self.assertEqual(m["articoli"], 6)
+        self.assertEqual([a["chiave"] for a in m["articoli_senza_famiglia"]],
+                         ["6200000005"])
+        self.assertEqual(m["copertura_famiglie"], 80.0)
+
+    def test_06_ricostruzione_idempotente(self):
+        """Rieseguire l'import sostituisce il precedente senza sedimentare
+        entita', relazioni o valori."""
+        from core import livello0
+        conn = db.get_connection()
+        prima = {t: conn.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0]
+                 for t in ("entita", "relazioni_entita", "attributi_entita",
+                           "importazioni", "anomalie_import")}
+        livello0.importa_listino(conn, self.listino)
+        dopo = {t: conn.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0]
+                for t in prima}
+        misura = livello0.misura_copertura(conn)
+        conn.close()
+        self.assertEqual(prima, dopo)
+        self.assertEqual(self.misura, misura)
+
+
+
+def crea_albero_vigenza():
+    """Archivio di prova per lingua, date e vigenza. I documenti sono file di
+    testo con la data dichiarata al proprio interno, come nel caso reale, dove
+    la data di filesystem e' l'impronta di una migrazione e non dice nulla."""
+    radice = cartella_temporanea(prefix="arch_vig_")
+
+    def scrivi(percorso, righe):
+        intero = os.path.join(radice, percorso.replace("/", os.sep))
+        os.makedirs(os.path.dirname(intero), exist_ok=True)
+        with open(intero, "w", encoding="utf-8") as f:
+            f.write("\n".join(righe) + "\n")
+
+    scrivi("CONTROLLERS/K270/DATA SHEETS/DS_K270_rev02_ITA.txt",
+           ["Scheda tecnica K270", "Data di emissione: 2024-01-10"])
+    scrivi("CONTROLLERS/K270/DATA SHEETS/DS_K270_rev02_ENG.txt",
+           ["Data sheet K270", "Data di emissione: 2026-05-01"])
+    scrivi("CONTROLLERS/K270/OPERATION MANUALS/OM_K270_rev01_ITA_2025-03-04.txt",
+           ["Manuale K270", "senza etichetta di data nel corpo"])
+    scrivi("CONTROLLERS/K280/DATA SHEETS/DS K280 rev03 ITA.txt",
+           ["Scheda tecnica K280", "nessuna data ricavabile"])
+    scrivi("Technical Release Note/TN.01-26_K270_ITA.txt",
+           ["Nota tecnica TN.01-26", "Data di rilascio: 2025-06-01",
+            "Prodotti interessati: K270, K280"])
+    scrivi("Technical Release Note/TN.01-26_K270_ENG.txt",
+           ["Technical note TN.01-26", "Data di rilascio: 2025-06-01",
+            "Prodotti interessati: K270, K280"])
+    return radice
+
+
+class TestLivello0Vigenza(unittest.TestCase):
+    """Livello 0: lingua, gruppo di traduzione, data e revisione, aggancio
+    multiplo, calcolo di vigenza e disposizione umana."""
+
+    @classmethod
+    def setUpClass(cls):
+        usa_dati_temporanei()
+        db.init_db()
+        cls.radice = crea_albero_vigenza()
+        from core import livello0
+        conn = db.get_connection()
+        cls.esito = livello0.ricostruisci(conn, cls.radice)
+        conn.close()
+
+    def _documento(self, frammento):
+        conn = db.get_connection()
+        riga = conn.execute(
+            "SELECT * FROM documenti WHERE percorso_rel LIKE ?",
+            ("%" + frammento + "%",)).fetchone()
+        conn.close()
+        return riga
+
+    def test_01_lingua_e_revisione_anche_con_underscore(self):
+        """L'ancora di parola non e' un confine accanto all'underscore, che
+        nei nomi di file e' invece un separatore: senza tenerne conto la
+        revisione di 'DS_K270_rev02_ITA' resterebbe non riconosciuta."""
+        doc = self._documento("DS_K270_rev02_ITA")
+        self.assertEqual(doc["lingua"], "ITA")
+        self.assertEqual(doc["lingua_origine"], "nome")
+        self.assertEqual(doc["revisione"], "rev02")
+        spaziato = self._documento("DS K280 rev03 ITA")
+        self.assertEqual(spaziato["revisione"], "rev03")
+
+    def test_02_data_dal_nome_o_dal_contenuto_mai_dal_filesystem(self):
+        dal_contenuto = self._documento("DS_K270_rev02_ITA")
+        self.assertEqual(dal_contenuto["data_documento"], "2024-01-10")
+        self.assertEqual(dal_contenuto["data_origine"], "contenuto")
+        dal_nome = self._documento("OM_K270_rev01_ITA_2025-03-04")
+        self.assertEqual(dal_nome["data_documento"], "2025-03-04")
+        self.assertEqual(dal_nome["data_origine"], "nome")
+        # il file esiste e ha una data di modifica, ma non e' la sua data
+        senza = self._documento("DS K280 rev03 ITA")
+        self.assertEqual(senza["data_documento"], "")
+        self.assertEqual(senza["stato_vigenza"], "non_valutato")
+
+    def test_03_ruolo_temporale_dalla_regola(self):
+        from core import livello0
+        nota = self._documento("TN.01-26_K270_ITA")
+        self.assertEqual(nota["ruolo_temporale"], livello0.RUOLO_AGGIORNAMENTO)
+        scheda = self._documento("DS_K270_rev02_ITA")
+        self.assertEqual(scheda["ruolo_temporale"], livello0.RUOLO_DESCRITTIVO)
+
+    def test_04_gruppo_di_traduzione_non_accorpa_per_somiglianza(self):
+        ita = self._documento("DS_K270_rev02_ITA")
+        eng = self._documento("DS_K270_rev02_ENG")
+        self.assertTrue(ita["gruppo_traduzione"])
+        self.assertEqual(ita["gruppo_traduzione"], eng["gruppo_traduzione"])
+        # il manuale esiste in una sola lingua: resta un gruppo di uno, e
+        # viene segnalato invece di essere accorpato a qualcosa di simile
+        soli = {g["gruppo_traduzione"]
+                for g in self.esito["gruppi_incompleti"]}
+        om = self._documento("OM_K270_rev01_ITA_2025-03-04")
+        self.assertIn(om["gruppo_traduzione"], soli)
+
+    def test_05_nota_collegata_a_piu_famiglie(self):
+        """La nota dichiara al proprio interno i prodotti interessati: e' la
+        via piu' attendibile, e produce un aggancio multiplo."""
+        conn = db.get_connection()
+        chiavi = sorted(r[0] for r in conn.execute(
+            "SELECT e.chiave FROM documenti_entita de "
+            "JOIN entita e ON e.id = de.entita_id "
+            "JOIN documenti d ON d.id = de.documento_id "
+            "WHERE d.percorso_rel LIKE '%TN.01-26_K270_ITA%'"))
+        origine = conn.execute(
+            "SELECT de.origine FROM documenti_entita de JOIN documenti d "
+            "ON d.id = de.documento_id WHERE d.percorso_rel LIKE "
+            "'%TN.01-26_K270_ITA%' LIMIT 1").fetchone()[0]
+        conn.close()
+        self.assertEqual(chiavi, ["K270", "K280"])
+        self.assertEqual(origine, "contenuto")
+
+    def test_06_segnalazione_solo_sui_documenti_anteriori(self):
+        ita = self._documento("DS_K270_rev02_ITA")
+        eng = self._documento("DS_K270_rev02_ENG")
+        self.assertEqual(ita["stato_vigenza"], "da_aggiornare")
+        # la versione inglese e' posteriore alla nota: resta vigente. E' la
+        # ragione per cui il confronto si fa per documento e non per famiglia
+        self.assertEqual(eng["stato_vigenza"], "vigente")
+
+    def test_07_la_causa_citata_e_nella_lingua_del_documento(self):
+        conn = db.get_connection()
+        causa = conn.execute(
+            "SELECT c.percorso_rel FROM segnalazioni_vigenza s "
+            "JOIN documenti d ON d.id = s.documento_id "
+            "JOIN documenti c ON c.id = s.causa_documento_id "
+            "WHERE d.percorso_rel LIKE '%DS_K270_rev02_ITA%'").fetchone()[0]
+        conn.close()
+        self.assertIn("_ITA", causa)
+
+    def test_08_scarto_in_giorni_calcolato(self):
+        conn = db.get_connection()
+        scarto = conn.execute(
+            "SELECT s.scarto_giorni FROM segnalazioni_vigenza s "
+            "JOIN documenti d ON d.id = s.documento_id "
+            "WHERE d.percorso_rel LIKE '%DS_K270_rev02_ITA%'").fetchone()[0]
+        conn.close()
+        self.assertEqual(scarto, 508)   # dal 10/01/2024 al 01/06/2025, anno bisestile
+
+    def test_09_disposizione_umana_sopravvive_al_ricalcolo(self):
+        from core import livello0
+        conn = db.get_connection()
+        seg = conn.execute(
+            "SELECT s.id FROM segnalazioni_vigenza s JOIN documenti d "
+            "ON d.id = s.documento_id WHERE d.percorso_rel LIKE "
+            "'%DS_K270_rev02_ITA%'").fetchone()[0]
+        livello0.disponi_segnalazione(conn, seg, "ignorata",
+                                      "variante non commercializzata", "Carlo")
+        livello0.calcola_vigenza(conn)
+        riga = conn.execute("SELECT stato, nota FROM segnalazioni_vigenza "
+                            "WHERE id = ?", (seg,)).fetchone()
+        conn.close()
+        self.assertEqual(riga["stato"], "ignorata")
+        self.assertEqual(riga["nota"], "variante non commercializzata")
+
+    def test_10_le_aperte_non_piu_prodotte_vengono_rimosse(self):
+        """Se una segnalazione aperta non e' piu' calcolabile, sparisce: il
+        ricalcolo non lascia sedimenti. Cio' che una persona ha disposto,
+        invece, resta."""
+        from core import livello0
+        conn = db.get_connection()
+        aperte_prima = conn.execute(
+            "SELECT COUNT(*) FROM segnalazioni_vigenza WHERE stato = 'aperta'"
+            ).fetchone()[0]
+        conn.execute("UPDATE documenti SET ruolo_temporale = ? "
+                     "WHERE percorso_rel LIKE '%TN.01-26%'",
+                     (livello0.RUOLO_NESSUNO,))
+        conn.commit()
+        livello0.calcola_vigenza(conn)
+        aperte_dopo = conn.execute(
+            "SELECT COUNT(*) FROM segnalazioni_vigenza WHERE stato = 'aperta'"
+            ).fetchone()[0]
+        disposte = conn.execute(
+            "SELECT COUNT(*) FROM segnalazioni_vigenza WHERE stato <> 'aperta'"
+            ).fetchone()[0]
+        conn.close()
+        self.assertGreater(aperte_prima, 0)
+        self.assertEqual(aperte_dopo, 0)
+        self.assertEqual(disposte, 1)
+
+
+
+class TestLivello0Pagine(unittest.TestCase):
+    """Livello 0: le tre pagine del modulo Base deterministica e la
+    disposizione umana registrata dall'interfaccia."""
+
+    @classmethod
+    def setUpClass(cls):
+        usa_dati_temporanei()
+        import app as applicazione
+        from modules import utenti
+        from core import livello0
+        cls.app = applicazione.create_app()
+        conn = db.get_connection()
+        conn.execute("INSERT INTO utenti (nome, pin, attivo, data_creazione) "
+                     "VALUES ('Carlo', ?, 1, '01/06/2026 09:00')",
+                     (utenti.hash_pin("5678"),))
+        conn.commit()
+        cls.uid = conn.execute("SELECT id FROM utenti").fetchone()[0]
+        cls.radice = crea_albero_vigenza()
+        livello0.ricostruisci(conn, cls.radice)
+        conn.close()
+        cls.client = cls.app.test_client()
+        cls.client.post("/utenti/accesso",
+                        data={"utente": str(cls.uid), "pin": "5678"})
+
+    def test_01_le_tre_pagine_rispondono(self):
+        for percorso in ("/livello0/", "/livello0/vigenza",
+                         "/livello0/riconciliazione"):
+            r = self.client.get(percorso)
+            self.assertEqual(r.status_code, 200, percorso)
+
+    def test_02_la_voce_di_menu_esiste(self):
+        testo = self.client.get("/livello0/").get_data(as_text=True)
+        self.assertIn("Base deterministica", testo)
+        self.assertIn("Vigenza", testo)
+
+    def test_03_la_pagina_vigenza_elenca_le_segnalazioni(self):
+        testo = self.client.get("/livello0/vigenza").get_data(as_text=True)
+        self.assertIn("DS_K270_rev02_ITA", testo)
+        # la versione posteriore alla nota non compare fra le aperte
+        self.assertNotIn("DS_K270_rev02_ENG.txt</td>", testo)
+
+    def test_04_disposizione_dalla_pagina(self):
+        conn = db.get_connection()
+        seg = conn.execute("SELECT id FROM segnalazioni_vigenza "
+                           "WHERE stato = 'aperta' LIMIT 1").fetchone()[0]
+        conn.close()
+        r = self.client.post("/livello0/vigenza/%d" % seg,
+                             data={"stato": "ignorata",
+                                   "nota": "variante non commercializzata"},
+                             follow_redirects=True)
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("variante non commercializzata",
+                      r.get_data(as_text=True))
+        conn = db.get_connection()
+        stato = conn.execute("SELECT stato FROM segnalazioni_vigenza "
+                             "WHERE id = ?", (seg,)).fetchone()[0]
+        conn.close()
+        self.assertEqual(stato, "ignorata")
+
+    def test_05_disposizione_non_riconosciuta_rifiutata(self):
+        conn = db.get_connection()
+        seg = conn.execute("SELECT id FROM segnalazioni_vigenza LIMIT 1"
+                           ).fetchone()[0]
+        prima = conn.execute("SELECT stato FROM segnalazioni_vigenza "
+                             "WHERE id = ?", (seg,)).fetchone()[0]
+        conn.close()
+        self.client.post("/livello0/vigenza/%d" % seg,
+                         data={"stato": "cancellata"}, follow_redirects=True)
+        conn = db.get_connection()
+        dopo = conn.execute("SELECT stato FROM segnalazioni_vigenza "
+                            "WHERE id = ?", (seg,)).fetchone()[0]
+        conn.close()
+        self.assertEqual(prima, dopo)
+
+    def test_06_riconciliazione_mostra_cio_che_non_ha_riscontro(self):
+        testo = self.client.get("/livello0/riconciliazione"
+                                ).get_data(as_text=True)
+        self.assertIn("Famiglie senza riscontro a listino", testo)
+        self.assertIn("Documenti non ricondotti ad alcuna entità", testo)
+
+
+
+def crea_albero_date():
+    """Archivio con una migrazione massiva riconoscibile e tre file che vi
+    sfuggono: uno toccato molto dopo la data che dichiara, uno la cui data di
+    modifica la precede, uno coerente."""
+    import time
+    radice = cartella_temporanea(prefix="arch_date_")
+
+    def scrivi(percorso, data_dichiarata, mtime):
+        intero = os.path.join(radice, percorso.replace("/", os.sep))
+        os.makedirs(os.path.dirname(intero), exist_ok=True)
+        with open(intero, "w", encoding="utf-8") as f:
+            f.write("Scheda tecnica\nData di emissione: %s\n" % data_dichiarata)
+        ts = time.mktime(time.strptime(mtime, "%Y-%m-%d"))
+        os.utime(intero, (ts, ts))
+
+    # dodici documenti appiattiti dalla migrazione
+    for i in range(12):
+        scrivi("CONTROLLERS/K300/DATA SHEETS/DS_K300_rev%02d_ITA.txt" % i,
+               "2024-0%d-1%d" % (1 + i % 8, i % 10), "2025-04-04")
+    # tre che vi sfuggono
+    scrivi("CONTROLLERS/K310/DATA SHEETS/DS_K310_rev01_ITA.txt",
+           "2024-01-10", "2026-07-15")          # toccato molto dopo
+    scrivi("CONTROLLERS/K320/DATA SHEETS/DS_K320_rev01_ITA.txt",
+           "2026-01-01", "2023-01-01")          # modificato prima di esistere
+    scrivi("CONTROLLERS/K330/DATA SHEETS/DS_K330_rev01_ITA.txt",
+           "2025-09-01", "2025-09-10")          # coerente
+    return radice
+
+
+class TestLivello0DueDate(unittest.TestCase):
+    """Livello 0: il documento ha due date, quella dichiarata al suo interno e
+    quella di modifica del file. La prima e' l'unica usata per la vigenza; lo
+    scarto fra le due e' un indizio, e va isolato dalle migrazioni massive."""
+
+    @classmethod
+    def setUpClass(cls):
+        usa_dati_temporanei()
+        db.init_db()
+        cls.radice = crea_albero_date()
+        from core import livello0
+        conn = db.get_connection()
+        livello0.ricostruisci(conn, cls.radice)
+        cls.misura = livello0.misura_coerenza_date(conn)
+        conn.close()
+
+    def _segnale(self, frammento):
+        conn = db.get_connection()
+        riga = conn.execute(
+            "SELECT segnale_data, scarto_file_giorni FROM documenti "
+            "WHERE percorso_rel LIKE ?", ("%" + frammento + "%",)).fetchone()
+        conn.close()
+        return riga
+
+    def test_01_la_giornata_di_migrazione_viene_riconosciuta(self):
+        giornate = dict(self.misura["giornate_di_migrazione"])
+        self.assertIn("2025-04-04", giornate)
+        self.assertEqual(giornate["2025-04-04"], 12)
+        self.assertEqual(self.misura["in_migrazione"], 12)
+
+    def test_02_i_file_migrati_non_producono_segnale(self):
+        """Sulla giornata di migrazione la data del file non distingue un
+        documento dall'altro: confrontarla sarebbe rumore."""
+        riga = self._segnale("DS_K300_rev00_ITA")
+        self.assertEqual(riga["segnale_data"], "in_migrazione")
+        self.assertEqual(riga["scarto_file_giorni"], 0)
+
+    def test_03_file_toccato_molto_dopo_la_data_dichiarata(self):
+        riga = self._segnale("DS_K310")
+        self.assertEqual(riga["segnale_data"], "ritoccato_dopo")
+        self.assertEqual(riga["scarto_file_giorni"], 917)
+        self.assertEqual(self.misura["ritoccati"], 1)
+
+    def test_04_file_anteriore_alla_data_che_dichiara(self):
+        riga = self._segnale("DS_K320")
+        self.assertEqual(riga["segnale_data"], "anteriore_al_contenuto")
+        self.assertLess(riga["scarto_file_giorni"], 0)
+        self.assertEqual(self.misura["anteriori"], 1)
+
+    def test_05_scarto_contenuto_entro_la_soglia_e_coerente(self):
+        riga = self._segnale("DS_K330")
+        self.assertEqual(riga["segnale_data"], "coerente")
+        self.assertEqual(riga["scarto_file_giorni"], 9)
+
+    def test_06_la_data_del_file_non_entra_mai_nella_vigenza(self):
+        """Il file toccato nel 2026 continua a dichiarare la propria data del
+        2024: e' quella, e solo quella, a valere per il calcolo."""
+        conn = db.get_connection()
+        riga = conn.execute(
+            "SELECT data_documento, data_origine FROM documenti "
+            "WHERE percorso_rel LIKE '%DS_K310%'").fetchone()
+        conn.close()
+        self.assertEqual(riga["data_documento"], "2024-01-10")
+        self.assertEqual(riga["data_origine"], "contenuto")
+
+    def test_07_su_un_archivio_piccolo_non_si_inventano_migrazioni(self):
+        """Con la sola quota, due documenti emessi nello stesso giorno
+        passerebbero per una migrazione: serve anche un minimo assoluto."""
+        from core import livello0
+        usa_dati_temporanei()
+        db.init_db()
+        radice = cartella_temporanea(prefix="arch_piccolo_")
+        import time
+        for i in range(4):
+            percorso = os.path.join(radice, "K400", "DATA SHEETS",
+                                    "DS_K400_rev0%d_ITA.txt" % i)
+            os.makedirs(os.path.dirname(percorso), exist_ok=True)
+            with open(percorso, "w", encoding="utf-8") as f:
+                f.write("Data di emissione: 2024-01-10\n")
+            ts = time.mktime(time.strptime("2025-04-04", "%Y-%m-%d"))
+            os.utime(percorso, (ts, ts))
+        conn = db.get_connection()
+        livello0.ricostruisci(conn, radice)
+        misura = livello0.misura_coerenza_date(conn)
+        conn.close()
+        self.assertEqual(misura["giornate_di_migrazione"], [])
+        self.assertEqual(misura["in_migrazione"], 0)
+        self.assertEqual(misura["ritoccati"], 4)
+
+
+
+class TestExport11(unittest.TestCase):
+    """Contratto wikify-archivio/1.1: additivo sulla 1.0, con lingue, date,
+    vigenza, relazioni fra entita' e vocabolario unico della riservatezza."""
+
+    CHIAVI_10_DOCUMENTO = ("percorso", "tipologia", "tipologia_origine",
+                           "riservatezza", "riservatezza_origine", "stato")
+    CHIAVI_10_RADICE = ("formato", "data_export", "entita",
+                        "documenti_senza_entita")
+
+    @classmethod
+    def setUpClass(cls):
+        usa_dati_temporanei()
+        db.init_db()
+        cls.radice = crea_albero_vigenza()
+        from core import archivio as arc
+        from core import livello0
+        conn = db.get_connection()
+        livello0.ricostruisci(conn, cls.radice)
+        # una riservatezza dal triage, con la grafia del triage
+        conn.execute("UPDATE documenti SET riservatezza = 'Riservato', "
+                     "riservatezza_origine = 'triage' WHERE percorso_rel "
+                     "LIKE '%DS_K270_rev02_ITA%'")
+        conn.commit()
+        cls.export = arc.costruisci_export(conn)
+        conn.close()
+
+    def _documento(self, frammento):
+        for e in self.export["entita"]:
+            for d in e["documenti"]:
+                if frammento in d["percorso"]:
+                    return d
+        for d in self.export["documenti_senza_entita"]:
+            if frammento in d["percorso"]:
+                return d
+        return None
+
+    def test_01_compatibile_con_la_1_0(self):
+        """Un consumatore della 1.0 trova tutto dove era."""
+        for chiave in self.CHIAVI_10_RADICE:
+            self.assertIn(chiave, self.export)
+        doc = self._documento("DS_K270_rev02_ITA")
+        for chiave in self.CHIAVI_10_DOCUMENTO:
+            self.assertIn(chiave, doc)
+        self.assertEqual(self.export["formato"], "wikify-archivio/1.1")
+
+    def test_02_campi_nuovi_del_documento(self):
+        doc = self._documento("DS_K270_rev02_ITA")
+        self.assertEqual(doc["lingua"], "ITA")
+        self.assertEqual(doc["data_documento"], "2024-01-10")
+        self.assertEqual(doc["data_origine"], "contenuto")
+        self.assertEqual(doc["revisione"], "rev02")
+        self.assertEqual(doc["ruolo_temporale"], "descrittivo")
+        self.assertEqual(doc["stato_vigenza"], "da_aggiornare")
+        self.assertIn("K270", doc["entita_collegate"])
+
+    def test_03_vocabolario_unico_conserva_l_originale(self):
+        doc = self._documento("DS_K270_rev02_ITA")
+        self.assertEqual(doc["riservatezza"], "Riservato")
+        self.assertEqual(doc["riservatezza_normalizzata"], "riservato")
+        pulito = self._documento("DS_K270_rev02_ENG")
+        self.assertEqual(pulito["riservatezza_normalizzata"], "")
+
+    def test_04_nota_trasversale_su_piu_entita(self):
+        nota = self._documento("TN.01-26_K270_ITA")
+        self.assertEqual(sorted(nota["entita_collegate"]), ["K270", "K280"])
+        self.assertEqual(nota["ruolo_temporale"], "aggiornamento")
+
+    def test_05_segnalazioni_e_statistiche_alla_radice(self):
+        segn = self.export["segnalazioni_vigenza"]
+        self.assertTrue(segn)
+        prima = segn[0]
+        for campo in ("entita", "documento", "causa", "lingua",
+                      "scarto_giorni", "stato"):
+            self.assertIn(campo, prima)
+        stat = self.export["statistiche"]
+        self.assertIn("copertura", stat)
+        self.assertIn("vigenza", stat)
+        # numeri, non elenchi
+        for blocco in stat.values():
+            for valore in blocco.values():
+                self.assertIsInstance(valore, (int, float))
+
+    def test_06_normalizzazione_non_indovina(self):
+        from core import archivio as arc
+        self.assertEqual(arc.normalizza_riservatezza("Condivisibile"),
+                         "condivisibile")
+        self.assertEqual(arc.normalizza_riservatezza("misto"), "misto")
+        self.assertEqual(arc.normalizza_riservatezza("bozza"), "")
+        self.assertEqual(arc.normalizza_riservatezza(None), "")
+
+
+class TestConsultaWiki(unittest.TestCase):
+    """Consulta, la wiki delle famiglie (fase D): rendering deterministico a
+    due profili, corpus markdown, le quattro rotte e la voce di menu.
+
+    Sull'archivio sintetico di vigenza le famiglie K270 e K280 non hanno
+    articoli propri (non e' stato importato alcun listino): per verificare
+    il mascheramento degli attributi si aggiunge a mano un articolo raccolto
+    da K270, con un attributo a visibilita' interna, come indicato dalla
+    specifica."""
+
+    @classmethod
+    def setUpClass(cls):
+        usa_dati_temporanei()
+        db.init_db()
+        cls.radice = crea_albero_vigenza()
+        from core import livello0
+        conn = db.get_connection()
+        livello0.ricostruisci(conn, cls.radice)
+
+        cls.eid_k270 = conn.execute(
+            "SELECT id FROM entita WHERE chiave = 'K270'").fetchone()[0]
+        cls.eid_k280 = conn.execute(
+            "SELECT id FROM entita WHERE chiave = 'K280'").fetchone()[0]
+        adesso = "01/06/2026 09:00"
+        tipo_articolo_id = livello0.assicura_tipo(conn, livello0.TIPO_ARTICOLO)
+        cls.eid_articolo = conn.execute(
+            "INSERT INTO entita (tipo_id, chiave, cartella_origine, origine, "
+            "stato, data_creazione, data_riallineamento) VALUES (?, "
+            "'K270-01', '', 'import', 'attiva', ?, ?)",
+            (tipo_articolo_id, adesso, adesso)).lastrowid
+        conn.execute(
+            "INSERT INTO relazioni_entita (tipo_relazione, entita_da_id, "
+            "entita_a_id, origine, importazione_id, data) "
+            "VALUES (?, ?, ?, 'manuale', 0, ?)",
+            (livello0.RELAZIONE, cls.eid_k270, cls.eid_articolo, adesso))
+        imp_id = conn.execute(
+            "INSERT INTO importazioni (data, nome_file, tipo_entita_id, "
+            "mappatura_json, n_righe, utente, stato) "
+            "VALUES (?, 'manuale', ?, '{}', 0, 'Carlo', 'confermata')",
+            (adesso, tipo_articolo_id)).lastrowid
+        conn.execute(
+            "INSERT INTO attributi_entita (entita_id, nome_attributo, "
+            "valore, importazione_id, data, origine, visibilita) "
+            "VALUES (?, 'prezzo_interno', '1234 EUR', ?, ?, 'manuale', "
+            "'interna')", (cls.eid_articolo, imp_id, adesso))
+        conn.commit()
+        conn.close()
+
+        from app import create_app
+        from modules import utenti
+        cls.app = create_app()
+        cls.app.config["TESTING"] = True
+        conn = db.get_connection()
+        conn.execute("INSERT INTO utenti (nome, pin, attivo, data_creazione) "
+                     "VALUES ('Carlo', ?, 1, ?)",
+                     (utenti.hash_pin("5678"), adesso))
+        conn.commit()
+        cls.uid = conn.execute("SELECT id FROM utenti").fetchone()[0]
+        conn.close()
+        cls.client = cls.app.test_client()
+        cls.client.post("/utenti/accesso",
+                        data={"utente": str(cls.uid), "pin": "5678"})
+
+    def test_01_asimmetria_per_lingua_su_k270(self):
+        """Verifica 1: la scheda di K270 mostra sia il documento italiano da
+        aggiornare sia quello inglese ancora vigente."""
+        from core import wiki
+        conn = db.get_connection()
+        scheda = wiki.scheda_famiglia(conn, self.eid_k270, wiki.PROFILO_INTERNO)
+        conn.close()
+        documenti = [d for gruppo in scheda["documenti"]
+                    for d in gruppo["documenti"]]
+        da_aggiornare = [d["nome"] for d in documenti
+                         if d["stato_vigenza"] == "da_aggiornare"]
+        vigenti = [d["nome"] for d in documenti
+                  if d["stato_vigenza"] == "vigente"]
+        self.assertTrue(any("ITA" in n for n in da_aggiornare), da_aggiornare)
+        self.assertTrue(any("ENG" in n for n in vigenti), vigenti)
+
+    def test_02_nota_trasversale_su_entrambe_le_famiglie(self):
+        """Verifica 2: la nota tecnica collegata a piu' famiglie compare
+        nelle note applicabili di entrambe."""
+        from core import wiki
+        conn = db.get_connection()
+        s270 = wiki.scheda_famiglia(conn, self.eid_k270)
+        s280 = wiki.scheda_famiglia(conn, self.eid_k280)
+        conn.close()
+        note270 = {n["nome"] for n in s270["note_applicabili"]}
+        note280 = {n["nome"] for n in s280["note_applicabili"]}
+        self.assertTrue(any("TN.01-26" in n for n in note270), note270)
+        self.assertTrue(any("TN.01-26" in n for n in note280), note280)
+
+    def test_03_profilo_condivisibile_maschera_l_attributo_interno(self):
+        """Verifica 3, il vincolo centrale: un attributo a visibilita'
+        interna non compare mai in chiaro nel profilo condivisibile, ne'
+        nella struttura dati ne' nella pagina HTML; il valore reale resta
+        leggibile solo nel profilo interno."""
+        from core import wiki
+        conn = db.get_connection()
+        interno = wiki.scheda_famiglia(conn, self.eid_k270, wiki.PROFILO_INTERNO)
+        condivisibile = wiki.scheda_famiglia(conn, self.eid_k270,
+                                             wiki.PROFILO_CONDIVISIBILE)
+        conn.close()
+
+        art_int = next(a for a in interno["articoli"]
+                       if a["chiave"] == "K270-01")
+        art_cond = next(a for a in condivisibile["articoli"]
+                        if a["chiave"] == "K270-01")
+        attr_int = next(a for a in art_int["attributi"]
+                        if a["nome"] == "prezzo_interno")
+        attr_cond = next(a for a in art_cond["attributi"]
+                         if a["nome"] == "prezzo_interno")
+        self.assertEqual(attr_int["valore"], "1234 EUR")
+        self.assertEqual(attr_cond["valore"], wiki.SEGNAPOSTO)
+        self.assertNotIn("1234", attr_cond["valore"])
+
+        # lo stesso vincolo, verificato sulla pagina HTML effettivamente
+        # servita: il valore riservato non deve mai comparire in chiaro.
+        pagina = self.client.get(
+            "/consulta/famiglia/%d?profilo=condivisibile" % self.eid_k270
+            ).get_data(as_text=True)
+        self.assertNotIn("1234 EUR", pagina)
+        self.assertIn("[riservato]", pagina)
+        pagina_interna = self.client.get(
+            "/consulta/famiglia/%d" % self.eid_k270).get_data(as_text=True)
+        self.assertIn("1234 EUR", pagina_interna)
+
+    def test_04_corpus_markdown_intestazione_e_sezioni(self):
+        """Verifica 4: il corpus contiene l'intestazione dichiarata e una
+        sezione per ogni famiglia attiva; il valore riservato non compare,
+        essendo il profilo di default del corpus quello condivisibile."""
+        from core import wiki
+        conn = db.get_connection()
+        famiglie = wiki.famiglie_attive(conn)
+        corpus = wiki.corpus_markdown(conn)
+        conn.close()
+        self.assertIn("wikify-corpus/1.0", corpus)
+        self.assertTrue(famiglie)
+        for f in famiglie:
+            self.assertIn("## Famiglia %s" % f["chiave"], corpus)
+        self.assertNotIn("1234 EUR", corpus)
+        self.assertIn(wiki.SEGNAPOSTO, corpus)
+
+    def test_05_le_quattro_rotte_rispondono(self):
+        """Verifica 5: le quattro rotte rispondono da utente autenticato."""
+        r = self.client.get("/consulta/")
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("Wiki delle famiglie", r.get_data(as_text=True))
+
+        r = self.client.get("/consulta/famiglia/%d" % self.eid_k270)
+        self.assertEqual(r.status_code, 200)
+
+        r = self.client.get("/consulta/corpus.md")
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("markdown", r.content_type)
+        self.assertIn("wikify-corpus/1.0", r.get_data(as_text=True))
+
+        r = self.client.get("/consulta/famiglia/%d.md" % self.eid_k270)
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("K270", r.get_data(as_text=True))
+
+    def test_06_voce_di_menu_in_sezione_consultare(self):
+        """Verifica 6: la voce «Wiki delle famiglie» compare nella sezione
+        Consultare della sidebar."""
+        testo = self.client.get("/").get_data(as_text=True)
+        inizio = testo.find("Consultare")
+        self.assertGreater(inizio, -1)
+        fine = testo.find("</details>", inizio)
+        self.assertIn("Wiki delle famiglie", testo[inizio:fine])
+
+
+class TestDemo(unittest.TestCase):
+    """Fase F: modalità demo all'ingresso e al reset. Ogni verifica parte
+    da una cartella dati temporanea vuota, sull'Archivio Demo reale del
+    progetto (deterministico e incluso, non un caso limite)."""
+
+    PIN = "1234"
+
+    def setUp(self):
+        usa_dati_temporanei()
+        import app as applicazione
+        self.app = applicazione.create_app()
+        self.app.config["TESTING"] = True
+        self.client = self.app.test_client()
+
+    def _crea_primo(self, modalita, follow_redirects=False):
+        return self.client.post(
+            "/utenti/benvenuto/crea",
+            data={"nome": "Carlo Verdini", "pin": self.PIN, "modalita": modalita},
+            follow_redirects=follow_redirects)
+
+    def test_01_benvenuto_pulita_nessuna_composizione(self):
+        """Verifica 1: scelta pulita, nessuna composizione, demo_attiva
+        assente o '0'."""
+        r = self._crea_primo("pulita", follow_redirects=True)
+        self.assertEqual(r.status_code, 200)
+        conn = db.get_connection()
+        n_inventario = conn.execute(
+            "SELECT COUNT(*) FROM inventario_file").fetchone()[0]
+        demo_attiva = db.get_impostazione(conn, "demo_attiva", "0")
+        conn.close()
+        self.assertEqual(n_inventario, 0)
+        self.assertEqual(demo_attiva, "0")
+
+    def test_02_benvenuto_demo_compone_e_modale_aperta(self):
+        """Verifica 2: scelta demo, 40 famiglie attive, candidati > 0,
+        demo_attiva = '1', e la home con ?demo=avviata mostra la modale
+        aperta."""
+        from core import livello0
+        r = self._crea_primo("demo", follow_redirects=False)
+        self.assertEqual(r.status_code, 302)
+        self.assertIn("demo=avviata", r.headers["Location"])
+
+        conn = db.get_connection()
+        copertura = livello0.misura_copertura(conn)
+        vigenza = livello0.misura_vigenza(conn)
+        demo_attiva = db.get_impostazione(conn, "demo_attiva", "0")
+        conn.close()
+        self.assertEqual(copertura["famiglie"], 40)
+        self.assertGreater(vigenza["segnalazioni_aperte"], 0)
+        self.assertEqual(demo_attiva, "1")
+
+        pagina = self.client.get("/?demo=avviata").get_data(as_text=True)
+        self.assertIn("Modalità demo", pagina)
+        self.assertIn('id="demo-overlay"', pagina)
+        self.assertIn("40", pagina)
+
+    def test_03_card_demo_solo_quando_attiva(self):
+        """Verifica 3: la card compare in home quando la demo è attiva, non
+        compare quando non lo è."""
+        self._crea_primo("pulita")
+        pagina = self.client.get("/").get_data(as_text=True)
+        self.assertNotIn("Modalità demo", pagina)
+
+        r = self.client.post("/manutenzione/reset",
+                             data={"conferma": "RESET", "pin": self.PIN,
+                                   "dopo": "demo"}, follow_redirects=False)
+        self.assertEqual(r.status_code, 302)
+        pagina = self.client.get("/").get_data(as_text=True)
+        self.assertIn("Modalità demo", pagina)
+
+    def test_04_reset_mostra_scelta_e_dopo_demo_ricompone(self):
+        """Verifica 4: la pagina di reset mostra la scelta; reset con
+        dopo=demo ricompone (candidati > 0)."""
+        from core import livello0
+        self._crea_primo("pulita")
+
+        pagina_reset = self.client.get(
+            "/manutenzione/reset").get_data(as_text=True)
+        self.assertIn('name="dopo"', pagina_reset)
+        self.assertIn('value="demo"', pagina_reset)
+
+        r = self.client.post("/manutenzione/reset",
+                             data={"conferma": "RESET", "pin": self.PIN,
+                                   "dopo": "demo"}, follow_redirects=False)
+        self.assertEqual(r.status_code, 302)
+        self.assertIn("demo=avviata", r.headers["Location"])
+
+        conn = db.get_connection()
+        vigenza = livello0.misura_vigenza(conn)
+        demo_attiva = db.get_impostazione(conn, "demo_attiva", "0")
+        conn.close()
+        self.assertGreater(vigenza["segnalazioni_aperte"], 0)
+        self.assertEqual(demo_attiva, "1")
+
+    def test_05_reset_pulito_azzera_e_disattiva_demo(self):
+        """Verifica 5: reset pulito, dati derivati azzerati e
+        demo_attiva = '0', nessuna ricomposizione."""
+        self._crea_primo("demo")
+        r = self.client.post("/manutenzione/reset",
+                             data={"conferma": "RESET", "pin": self.PIN,
+                                   "dopo": "pulita"}, follow_redirects=True)
+        self.assertEqual(r.status_code, 200)
+
+        conn = db.get_connection()
+        n_inventario = conn.execute(
+            "SELECT COUNT(*) FROM inventario_file").fetchone()[0]
+        n_entita = conn.execute("SELECT COUNT(*) FROM entita").fetchone()[0]
+        demo_attiva = db.get_impostazione(conn, "demo_attiva", "0")
+        conn.close()
+        self.assertEqual(n_inventario, 0)
+        self.assertEqual(n_entita, 0)
+        self.assertEqual(demo_attiva, "0")
+
+    def test_06_demo_non_disponibile_ripiega_su_pulita(self):
+        """Verifica 6: con RADICE_DEMO sostituita da un percorso
+        inesistente, il form di benvenuto mostra l'opzione disabilitata e
+        la richiesta esplicita ripiega su pulita con flash di errore."""
+        from core import demo as demo_mod
+        vecchia = demo_mod.RADICE_DEMO
+        demo_mod.RADICE_DEMO = db.Path("/percorso/inesistente/wikify_demo_test")
+        try:
+            pagina = self.client.get(
+                "/utenti/benvenuto").get_data(as_text=True)
+            self.assertIn('value="demo"', pagina)
+            self.assertIn("disabled", pagina)
+
+            r = self._crea_primo("demo", follow_redirects=True)
+            self.assertEqual(r.status_code, 200)
+            testo = r.get_data(as_text=True)
+            self.assertIn("non è disponibile", testo)
+
+            conn = db.get_connection()
+            n_inventario = conn.execute(
+                "SELECT COUNT(*) FROM inventario_file").fetchone()[0]
+            demo_attiva = db.get_impostazione(conn, "demo_attiva", "0")
+            conn.close()
+            self.assertEqual(n_inventario, 0)
+            self.assertEqual(demo_attiva, "0")
+        finally:
+            demo_mod.RADICE_DEMO = vecchia
 
 
 if __name__ == "__main__":

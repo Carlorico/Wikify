@@ -38,7 +38,13 @@ from . import validazione as val
 # Costanti e tassonomie
 # ---------------------------------------------------------------------------
 
-FORMATO_EXPORT = "wikify-archivio/1.0"
+FORMATO_EXPORT = "wikify-archivio/1.1"
+
+# Vocabolario unico della riservatezza nell'export. Il triage scrive
+# "Riservato"/"Condivisibile", le proposte dell'agente "riservato",
+# "condivisibile", "misto": contratti gia' congelati che non si toccano.
+# L'export 1.1 normalizza in un campo dedicato e conserva l'originale.
+VOCABOLARIO_RISERVATEZZA = ("condivisibile", "riservato", "misto")
 
 TIPOLOGIA_NON_CLASSIFICATO = "non_classificato"
 
@@ -636,17 +642,48 @@ def completezza_entita(conn, tipo_id=None):
 # Export (contratto verso la fase 2)
 # ---------------------------------------------------------------------------
 
-def _doc_export(d):
+def normalizza_riservatezza(valore):
+    """Il valore di riservatezza nel vocabolario unico dell'export 1.1.
+    Cio' che non vi corrisponde diventa stringa vuota: mai indovinare."""
+    v = (valore or "").strip().lower()
+    return v if v in VOCABOLARIO_RISERVATEZZA else ""
+
+
+def _doc_export(d, collegate=None):
+    """Un documento nel contratto 1.1. I campi della 1.0 restano identici;
+    i nuovi si aggiungono in coda. `collegate` e' la mappa documento_id ->
+    chiavi delle entita' collegate (prevalente per prima)."""
     return {"percorso": d["percorso_rel"], "tipologia": d["tipologia"],
             "tipologia_origine": d["tipologia_origine"],
             "riservatezza": d["riservatezza"] or "",
             "riservatezza_origine": d["riservatezza_origine"] or "",
-            "stato": d["stato"]}
+            "stato": d["stato"],
+            "riservatezza_normalizzata": normalizza_riservatezza(d["riservatezza"]),
+            "lingua": d["lingua"] or "",
+            "gruppo_traduzione": d["gruppo_traduzione"] or "",
+            "data_documento": d["data_documento"] or "",
+            "data_origine": d["data_origine"] or "",
+            "revisione": d["revisione"] or "",
+            "ruolo_temporale": d["ruolo_temporale"],
+            "stato_vigenza": d["stato_vigenza"],
+            "entita_collegate": (collegate or {}).get(d["id"], [])}
 
 
 def costruisci_export(conn):
-    """Struttura del contratto wikify-archivio/1.0: entita' con attributi e
-    documenti agganciati, piu' i documenti senza entita' corrispondente."""
+    """Struttura del contratto wikify-archivio/1.1: entita' con attributi e
+    documenti agganciati, i documenti senza entita', le relazioni fra
+    entita', le segnalazioni di vigenza e le statistiche di copertura.
+    Evoluzione additiva della 1.0: ogni campo preesistente resta al suo
+    posto con lo stesso significato."""
+    chiave_di = {r["id"]: r["chiave"] for r in conn.execute(
+        "SELECT id, chiave FROM entita")}
+    collegate = {}
+    for r in conn.execute(
+            "SELECT documento_id, entita_id, prevalente FROM documenti_entita "
+            "ORDER BY documento_id, prevalente DESC, entita_id"):
+        chiave = chiave_di.get(r["entita_id"])
+        if chiave:
+            collegate.setdefault(r["documento_id"], []).append(chiave)
     entita_out = []
     for e in conn.execute(
             "SELECT e.*, t.nome AS tipo_nome FROM entita e "
@@ -659,16 +696,48 @@ def costruisci_export(conn):
             "cartella_origine": e["cartella_origine"], "stato": e["stato"],
             "attributi": [{"attributo": a["attributo"], "valore": a["valore"]}
                          for a in cat.attributi_di_entita(conn, e["id"])],
-            "documenti": [_doc_export(d) for d in documenti],
+            "documenti": [_doc_export(d, collegate) for d in documenti],
         })
     orfani = conn.execute(
         "SELECT * FROM documenti WHERE entita_id IS NULL "
         "ORDER BY percorso_rel").fetchall()
+    relazioni = [
+        {"tipo": r["tipo_relazione"],
+         "da": chiave_di.get(r["entita_da_id"], ""),
+         "a": chiave_di.get(r["entita_a_id"], "")}
+        for r in conn.execute(
+            "SELECT tipo_relazione, entita_da_id, entita_a_id "
+            "FROM relazioni_entita ORDER BY tipo_relazione, id")
+        if chiave_di.get(r["entita_da_id"]) and chiave_di.get(r["entita_a_id"])]
+
+    segnalazioni = [
+        {"entita": chiave_di.get(sv["entita_id"], ""),
+         "documento": sv["percorso_doc"], "causa": sv["percorso_causa"],
+         "lingua": sv["lingua"] or "", "scarto_giorni": sv["scarto_giorni"],
+         "stato": sv["stato"], "nota": sv["nota"] or ""}
+        for sv in conn.execute(
+            "SELECT s.*, d.percorso_rel AS percorso_doc, "
+            "c.percorso_rel AS percorso_causa FROM segnalazioni_vigenza s "
+            "JOIN documenti d ON d.id = s.documento_id "
+            "JOIN documenti c ON c.id = s.causa_documento_id "
+            "ORDER BY s.scarto_giorni DESC")]
+
+    # Statistiche senza elenchi: i numeri, non le liste.
+    from core import livello0
+    copertura = {k: v for k, v in livello0.misura_copertura(conn).items()
+                 if isinstance(v, (int, float))}
+    vigenza = {k: v for k, v in livello0.misura_vigenza(conn).items()
+               if isinstance(v, (int, float))}
+
     return {
         "formato": FORMATO_EXPORT,
         "data_export": datetime.datetime.now().isoformat(timespec="seconds"),
         "entita": entita_out,
         "documenti_senza_entita": [
-            dict(_doc_export(d), cartella_progetto=d["cartella_progetto"])
+            dict(_doc_export(d, collegate),
+                 cartella_progetto=d["cartella_progetto"])
             for d in orfani],
+        "relazioni": relazioni,
+        "segnalazioni_vigenza": segnalazioni,
+        "statistiche": {"copertura": copertura, "vigenza": vigenza},
     }

@@ -18,6 +18,7 @@ from flask import (Blueprint, Response, flash, redirect, render_template,
 
 from core import catalogo as cat
 from core import db
+from core import livello0 as l0
 from core.report import sanifica_cella
 
 bp = Blueprint("catalogo", __name__)
@@ -67,9 +68,33 @@ def definizione():
                      "n_attive": n_attive, "n_orfane": n_orfane,
                      "modo": cat.MODI.get(criterio.get("modo", ""), "")})
     n_cartelle = len(cat.cartelle_inventario(conn))
+    tipo_famiglia = conn.execute(
+        "SELECT id FROM tipi_entita WHERE nome = ?",
+        (l0.TIPO_FAMIGLIA,)).fetchone()
+    n_famiglie_attive = 0
+    if tipo_famiglia is not None:
+        n_famiglie_attive = conn.execute(
+            "SELECT COUNT(*) FROM entita WHERE tipo_id = ? "
+            "AND stato = 'attiva'", (tipo_famiglia["id"],)).fetchone()[0]
     conn.close()
     return render_template("catalogo_definizione.html", tipi=tipi,
-                           n_cartelle=n_cartelle)
+                           n_cartelle=n_cartelle,
+                           n_famiglie_attive=n_famiglie_attive)
+
+
+@bp.route("/famiglie-albero", methods=["POST"])
+def famiglie_albero():
+    """Sincronizza le entità di tipo Famiglia con quanto riconosciuto
+    dall'albero dell'inventario: crea le nuove, riallinea le esistenti,
+    marca come senza riscontro quelle non più trovate, senza mai cancellare."""
+    conn = db.get_connection()
+    esito = l0.sincronizza_famiglie(conn)
+    conn.close()
+    flash("Famiglie dall'albero: %d trovate, %d nuove, %d senza riscontro, "
+          "%d in conflitto di chiave."
+          % (esito["trovate"], esito["nuove"], len(esito["scomparse"]),
+             len(esito["conflitti"])), "ok")
+    return redirect(url_for("catalogo.definizione"))
 
 
 def _criterio_da_form(form, escluse=None):

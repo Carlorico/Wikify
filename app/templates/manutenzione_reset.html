@@ -22,6 +22,20 @@
     <input type="password" id="pin" name="pin" required inputmode="numeric"
            pattern="[0-9]{4,6}" maxlength="6" autocomplete="off"
            placeholder="4-6 cifre">
+    <fieldset style="margin-top:16px">
+      <legend>Dopo il reset</legend>
+      <label style="display:block; font-weight:normal">
+        <input type="radio" name="dopo" value="pulita" checked>
+        Istanza pulita: l'archivio resta vuoto.
+      </label>
+      {% if demo_disponibile %}
+      <label style="display:block; font-weight:normal; margin-top:8px">
+        <input type="radio" name="dopo" value="demo">
+        Modalità demo: ricompone l'Archivio Demo (inventario, famiglie,
+        listino e vigenza già calcolati).
+      </label>
+      {% endif %}
+    </fieldset>
     <div style="margin-top:16px">
       <button type="submit" class="bottone-reset">Reset archivio</button>
       <a class="bottone bottone-secondario" href="{{ url_for('home') }}">Annulla</a>

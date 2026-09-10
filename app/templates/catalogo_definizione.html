@@ -19,6 +19,23 @@ della chiave. Le entità persistono: il riallineamento crea le nuove e marca
 livello: eseguire prima l'inventario dell'archivio dalla Dashboard.</div>
 {% endif %}
 
+<div class="scheda">
+  <h2 style="margin-top:0">Famiglie dall'albero</h2>
+  <p class="nota-piccola">Le famiglie si riconoscono dai marcatori di tipologia
+  presenti nell'albero dell'inventario, senza un livello di profondità fisso: una
+  cartella con una sottocartella marcatore, oppure con documenti diretti, genera
+  una famiglia.</p>
+  <p class="nota-piccola">La sincronizzazione crea le famiglie nuove, riallinea
+  quelle esistenti e marca come senza riscontro quelle non più trovate, senza
+  mai cancellare.</p>
+  {% if n_famiglie_attive %}
+  <p class="nota-piccola">Famiglie attive: {{ n_famiglie_attive }}.</p>
+  {% endif %}
+  <form method="post" action="{{ url_for('catalogo.famiglie_albero') }}">
+    <button type="submit" class="bottone-piccolo">Sincronizza famiglie dall'albero</button>
+  </form>
+</div>
+
 {% for t in tipi %}
 <div class="scheda">
   <div class="testata-pagina">

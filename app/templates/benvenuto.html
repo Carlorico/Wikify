@@ -14,6 +14,22 @@
     <input type="password" id="pr-pin" name="pin" inputmode="numeric"
            pattern="[0-9]{4,6}" maxlength="6" autocomplete="off" required
            placeholder="4-6 cifre">
+    <fieldset style="margin-top:18px">
+      <legend>Modalità di avvio</legend>
+      <label style="display:block; font-weight:normal">
+        <input type="radio" name="modalita" value="pulita" checked>
+        Istanza pulita: si parte da un archivio vuoto.
+      </label>
+      <label style="display:block; font-weight:normal; margin-top:8px">
+        <input type="radio" name="modalita" value="demo"
+               {% if not demo_disponibile %}disabled{% endif %}>
+        Modalità demo: compone al volo un archivio dimostrativo (Idrometrica,
+        dati di fantasia), con inventario, famiglie, listino e vigenza già calcolati.
+      </label>
+      {% if not demo_disponibile %}
+      <p class="nota-piccola">L'Archivio Demo non è disponibile in questa installazione.</p>
+      {% endif %}
+    </fieldset>
     <p style="margin-top:16px"><button type="submit">Crea il primo utente ed entra</button></p>
   </form>
 </div>

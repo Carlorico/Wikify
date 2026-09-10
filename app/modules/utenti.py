@@ -18,6 +18,7 @@ from flask import (Blueprint, flash, redirect, render_template, request,
                    session, url_for)
 
 from core import db
+from core import demo
 
 bp = Blueprint("utenti", __name__)
 
@@ -167,7 +168,8 @@ def benvenuto():
     conn.close()
     if n_utenti > 0:
         return redirect(url_for("utenti.accesso"))
-    return render_template("benvenuto.html", errore=None)
+    return render_template("benvenuto.html", errore=None,
+                           demo_disponibile=demo.disponibile())
 
 
 @bp.route("/benvenuto/crea", methods=["POST"])
@@ -179,19 +181,32 @@ def crea_primo():
         return redirect(url_for("utenti.accesso"))
     nome = (request.form.get("nome") or "").strip()
     pin = (request.form.get("pin") or "").strip()
+    modalita = (request.form.get("modalita") or "pulita").strip()
     errore = _valida(nome, pin)
     if errore:
         conn.close()
-        return render_template("benvenuto.html", errore=errore)
+        return render_template("benvenuto.html", errore=errore,
+                               demo_disponibile=demo.disponibile())
     adesso = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
     cur = conn.execute(
         "INSERT INTO utenti (nome, pin, attivo, data_creazione) VALUES (?, ?, 1, ?)",
         (nome, hash_pin(pin), adesso))
     conn.commit()
     uid = cur.lastrowid
-    conn.close()
     session["utente_id"] = uid
     session["utente_nome"] = nome
+
+    if modalita == "demo" and demo.disponibile():
+        demo.componi(conn)
+        conn.close()
+        flash("Primo utente creato: benvenuto, %s. Modalità demo composta "
+              "sull'Archivio Demo." % nome, "ok")
+        return redirect(url_for("home", demo="avviata"))
+
+    conn.close()
+    if modalita == "demo":
+        flash("L'Archivio Demo non è disponibile in questa installazione: "
+              "si procede con un'istanza pulita.", "errore")
     flash("Primo utente creato: benvenuto, %s." % nome, "ok")
     return redirect(url_for("home"))
 

@@ -390,9 +390,136 @@ CREATE INDEX IF NOT EXISTS idx_documenti_entita ON documenti(entita_id);
 CREATE INDEX IF NOT EXISTS idx_documenti_tipologia ON documenti(tipologia);
 """
 
+# V8: livello 0, la base deterministica (progettazione in
+# !!IINTERNO!!!/modello_dati_livello_0.md). Colma cinque scarti rilevati
+# confrontando lo schema V7 con il caso reale: l'articolo commerciale non
+# esisteva come oggetto pur essendo la chiave del dominio, non esisteva
+# relazione fra entita', il documento si agganciava a una sola entita', non
+# esisteva dimensione temporale, non esisteva estrazione di attributi dal
+# testo.
+#
+# Migrazione additiva: nessuna tabella esistente viene ridefinita. Le colonne
+# aggiunte hanno tutte un valore predefinito costante, quindi ALTER TABLE non
+# riscrive la tabella. Non esiste la forma condizionale per le colonne, ma la
+# guardia di PRAGMA user_version garantisce una sola esecuzione.
+#
+# Scelte di schema da tenere presenti:
+# - relazioni_entita.entita_da_id/entita_a_id e documenti_entita.entita_id non
+#   dichiarano REFERENCES: sono collegamenti derivati e ricalcolati a ogni
+#   consolidamento, coerentemente con quanto gia' fatto per documenti.entita_id
+#   (un'entita' cancellata non deve impedire la lettura di cio' che e' scritto);
+# - importazioni_id vale 0 quando il legame non nasce da un import, cosi' il
+#   vincolo di unicita' resta effettivo (in SQLite due NULL sono distinti);
+# - documenti.entita_id resta valorizzata con l'entita' prevalente, cosi' le
+#   viste e l'export della versione 1.0 continuano a funzionare.
+SCHEMA_V8 = """
+CREATE TABLE IF NOT EXISTS relazioni_entita (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    tipo_relazione  TEXT NOT NULL,
+    entita_da_id    INTEGER NOT NULL,
+    entita_a_id     INTEGER NOT NULL,
+    origine         TEXT NOT NULL DEFAULT 'import',
+    importazione_id INTEGER NOT NULL DEFAULT 0,
+    data            TEXT,
+    UNIQUE (tipo_relazione, entita_da_id, entita_a_id, importazione_id)
+);
+CREATE INDEX IF NOT EXISTS idx_relazioni_da ON relazioni_entita(entita_da_id);
+CREATE INDEX IF NOT EXISTS idx_relazioni_a  ON relazioni_entita(entita_a_id);
+
+CREATE TABLE IF NOT EXISTS documenti_entita (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    documento_id INTEGER NOT NULL REFERENCES documenti(id) ON DELETE CASCADE,
+    entita_id    INTEGER NOT NULL,
+    prevalente   INTEGER NOT NULL DEFAULT 0,
+    origine      TEXT NOT NULL DEFAULT 'cartella',
+    regola_id    INTEGER NOT NULL DEFAULT 0,
+    data         TEXT,
+    UNIQUE (documento_id, entita_id)
+);
+CREATE INDEX IF NOT EXISTS idx_doc_entita_entita ON documenti_entita(entita_id);
+
+CREATE TABLE IF NOT EXISTS regole_estrazione (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome           TEXT NOT NULL,
+    ambito         TEXT NOT NULL DEFAULT 'nome_file',
+    attributo      TEXT NOT NULL,
+    criterio_json  TEXT NOT NULL DEFAULT '{}',
+    priorita       INTEGER NOT NULL DEFAULT 0,
+    attiva         INTEGER NOT NULL DEFAULT 1,
+    data_creazione TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_regole_estrazione_priorita
+    ON regole_estrazione(priorita);
+
+CREATE TABLE IF NOT EXISTS segnalazioni_vigenza (
+    id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+    entita_id          INTEGER NOT NULL,
+    documento_id       INTEGER NOT NULL,
+    causa_documento_id INTEGER NOT NULL,
+    lingua             TEXT DEFAULT '',
+    motivo             TEXT NOT NULL DEFAULT 'nota_posteriore',
+    scarto_giorni      INTEGER DEFAULT 0,
+    data_calcolo       TEXT,
+    stato              TEXT NOT NULL DEFAULT 'aperta',
+    nota               TEXT DEFAULT '',
+    utente             TEXT DEFAULT '',
+    data_disposizione  TEXT,
+    UNIQUE (documento_id, causa_documento_id)
+);
+CREATE INDEX IF NOT EXISTS idx_vigenza_stato ON segnalazioni_vigenza(stato);
+
+ALTER TABLE entita ADD COLUMN origine TEXT NOT NULL DEFAULT 'cartella';
+
+ALTER TABLE documenti ADD COLUMN lingua             TEXT DEFAULT '';
+ALTER TABLE documenti ADD COLUMN lingua_origine     TEXT DEFAULT '';
+ALTER TABLE documenti ADD COLUMN gruppo_traduzione  TEXT DEFAULT '';
+ALTER TABLE documenti ADD COLUMN data_documento     TEXT DEFAULT '';
+ALTER TABLE documenti ADD COLUMN data_origine       TEXT DEFAULT '';
+ALTER TABLE documenti ADD COLUMN revisione          TEXT DEFAULT '';
+ALTER TABLE documenti ADD COLUMN stato_vigenza      TEXT NOT NULL DEFAULT 'non_valutato';
+
+ALTER TABLE attributi_entita ADD COLUMN origine    TEXT NOT NULL DEFAULT 'import';
+ALTER TABLE attributi_entita ADD COLUMN regola_id  INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE attributi_entita ADD COLUMN visibilita TEXT NOT NULL DEFAULT 'interna';
+"""
+
+# V9: ruolo temporale del documento, presupposto del calcolo di vigenza.
+#
+# Scarto emerso in fase di realizzazione e non previsto in progettazione: la
+# tassonomia delle tipologie e' congelata nel contratto con l'agente e non
+# contiene la nota tecnica. Estenderla avrebbe toccato un contratto gia'
+# chiuso, ma soprattutto avrebbe confuso due assi distinti: che cosa e' un
+# documento (tipologia) e che ruolo ha nel tempo (descrive un prodotto, oppure
+# annuncia una modifica che rende superato cio' che lo descrive).
+#
+# Valori: 'descrittivo' (puo' essere superato), 'aggiornamento' (supera),
+# 'nessuno' (estraneo al calcolo, es. un catalogo commerciale). Il valore
+# predefinito e' 'descrittivo': un documento e' soggetto a essere superato
+# finche' una regola non lo qualifica diversamente.
+SCHEMA_V9 = """
+ALTER TABLE documenti ADD COLUMN ruolo_temporale TEXT NOT NULL
+    DEFAULT 'descrittivo';
+ALTER TABLE documenti ADD COLUMN ruolo_origine TEXT NOT NULL DEFAULT 'regola';
+"""
+
+# V10: coerenza fra la data del file e quella dichiarata nel documento.
+#
+# La data di filesystem non e' la data del documento e non va usata come tale.
+# Lo scarto fra le due, pero', e' un segnale: un documento il cui contenuto si
+# dichiara vecchio ma il cui file risulta toccato di recente merita
+# un'occhiata. Non e' una regola, e' un indizio, e come tale viene presentato.
+#
+# Il segnale ha senso solo dopo aver isolato le migrazioni massive: se un
+# archivio e' stato trasferito in blocco, quasi tutti i file condividono la
+# stessa data di modifica e lo scarto non dice nulla di nessuno.
+SCHEMA_V10 = """
+ALTER TABLE documenti ADD COLUMN segnale_data TEXT NOT NULL DEFAULT '';
+ALTER TABLE documenti ADD COLUMN scarto_file_giorni INTEGER NOT NULL DEFAULT 0;
+"""
+
 # Per una futura migrazione: accodare qui un nuovo script SQL.
 MIGRAZIONI = [SCHEMA_V1, SCHEMA_V2, SCHEMA_V3, SCHEMA_V4, SCHEMA_V5, SCHEMA_V6,
-              SCHEMA_V7]
+              SCHEMA_V7, SCHEMA_V8, SCHEMA_V9, SCHEMA_V10]
 
 
 def get_secret_key():

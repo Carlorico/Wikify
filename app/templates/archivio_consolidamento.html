@@ -9,6 +9,9 @@
     <a class="bottone bottone-secondario" href="{{ url_for('archivio.export_xlsx') }}">Export XLSX</a>
   </div>
 </div>
+<p class="nota-piccola">L'ingresso unico per generare e aggiornare l'archivio è la
+<a href="{{ url_for('livello0.ricostruzione') }}">Ricostruzione</a>: questa pagina ne
+mostra lo stato corrente e mette a disposizione l'export di consegna.</p>
 <p class="nota-piccola">La ricostruzione è idempotente e non distruttiva: le correzioni
 manuali e le proposte validate in Validazione AI non vengono mai sovrascritte. Rieseguirla
 è sempre sicuro e produce il report sottostante.</p>

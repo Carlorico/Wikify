@@ -54,7 +54,7 @@ terminale (o chiudere la finestra).
 
 ## Primo avvio
 
-Al primo avvio il database viene creato in `Wikify_dati/archivio_smart.db`
+Al primo avvio il database viene creato in `dati/lavoro/archivio_smart.db`
 (vedere "Cartella dei dati di lavoro") e il
 dizionario viene popolato con le 13 regole del file
 `dizionario_pattern.yaml` dello scanner CLI (se presente nella cartella
@@ -138,7 +138,7 @@ sopra il contenuto.
   automaticamente con il nome dell'utente connesso, insieme alla data
   di validazione.
 - La chiave di sessione viene generata al primo avvio e salvata in
-  `Wikify_dati/secret_key.txt`.
+  `dati/lavoro/secret_key.txt`.
 
 ## Consultazione e triage per file
 
@@ -417,19 +417,19 @@ app/
   docs_agente/     istruzioni e formato bozze per l'agente di rilevazione
   mcp_server/      server MCP locale (processo separato, dipendenza propria)
 
-../../Wikify_dati/ database SQLite, chiave di sessione, temporanei di import
+../dati/lavoro/ database SQLite, chiave di sessione, temporanei di import
 ```
 
 ## Cartella dei dati di lavoro
 
 I dati di lavoro (database SQLite con inventario, esiti di scansione,
 triage, catalogo e validazioni; chiave di sessione; temporanei di import)
-risiedono in `Wikify_dati`, cartella **sorella** di `Wikify`:
+risiedono in `dati/lavoro`, cartella **sorella** di `Wikify`:
 
 ```
 Workshop/
   Wikify/         codice, documentazione, brand  (versionabile)
-  Wikify_dati/    database, chiave di sessione, import_temp  (solo locale)
+  dati/lavoro/    database, chiave di sessione, import_temp  (solo locale)
 ```
 
 La separazione tiene i dati fuori dalla cartella di progetto: nessun

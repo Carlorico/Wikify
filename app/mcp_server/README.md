@@ -37,13 +37,13 @@ Dal terminale, nella cartella del progetto in cui si vuole usare Wikify:
 
 ```
 claude mcp add wikify \
-  --env ARCHIVIO_SMART_DATA=/percorso/assoluto/Workshop/Wikify_dati \
+  --env ARCHIVIO_SMART_DATA=/percorso/assoluto/Workshop/dati/lavoro \
   -- python3 /percorso/assoluto/Wikify/app/mcp_server/server.py
 ```
 
 Sostituire i due percorsi con quelli reali sul proprio computer. La
 variabile `ARCHIVIO_SMART_DATA` deve indicare la **stessa** cartella dati
-usata dall'app (per impostazione predefinita `Wikify_dati`, cartella
+usata dall'app (per impostazione predefinita `dati/lavoro`, cartella
 sorella di `Wikify`: vedere "Cartella dei dati di lavoro" nel README
 dell'app): senza di essa il server lavorerebbe su una base dati diversa,
 non vedrebbe il perimetro condivisibile e le bozze consegnate non
@@ -65,7 +65,7 @@ Aggiungere una voce nel file di configurazione MCP di Claude Desktop
       "command": "python3",
       "args": ["/percorso/assoluto/app/mcp_server/server.py"],
       "env": {
-        "ARCHIVIO_SMART_DATA": "/percorso/assoluto/Workshop/Wikify_dati"
+        "ARCHIVIO_SMART_DATA": "/percorso/assoluto/Workshop/dati/lavoro"
       }
     }
   }

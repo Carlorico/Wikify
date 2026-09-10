@@ -30,54 +30,76 @@
     <a class="voce-menu {{ 'attiva' if ep == 'home' }}" href="{{ url_for('home') }}">
       <span class="icona-voce">&#8962;</span><span class="testo-voce">Dashboard</span>
     </a>
-    {% set sezione_classificazione = ep.startswith('storico.') or ep.startswith('dizionario.') or ep.startswith('scansione.') %}
-    <details class="sezione-menu" {% if sezione_classificazione %}open{% endif %}>
-      <summary class="voce-menu voce-sezione {{ 'attiva' if sezione_classificazione }}">
-        <span class="icona-voce">&#9776;</span><span class="testo-voce">Classificazione base</span>
+    {% set sezione_conoscere = ep.startswith('storico.') or ep.startswith('scansione.') or ep.startswith('dizionario.') %}
+    <details class="sezione-menu" {% if sezione_conoscere %}open{% endif %}>
+      <summary class="voce-menu voce-sezione {{ 'attiva' if sezione_conoscere }}">
+        <span class="icona-voce">&#128269;</span><span class="testo-voce">Conoscere</span>
       </summary>
+      <p class="menu-descrittiva">Che cosa contiene l'archivio e che cosa è sensibile.
+      Richiede solo la cartella dell'archivio.</p>
       <a class="voce-menu sotto-voce {{ 'attiva' if ep.startswith('storico.') or ep.startswith('scansione.') }}" href="{{ url_for('storico.lista') }}">
-        <span class="testo-voce">Storico</span>
+        <span class="testo-voce">Scansione e triage</span>
       </a>
       <a class="voce-menu sotto-voce {{ 'attiva' if ep.startswith('dizionario.') }}" href="{{ url_for('dizionario.lista') }}">
-        <span class="testo-voce">Dizionario</span>
+        <span class="testo-voce">Dizionario riservatezza</span>
       </a>
     </details>
-    {% set sezione_catalogo = ep.startswith('catalogo.') %}
     {% set voce_arricchimento = ep.startswith('catalogo.arricchimento') %}
-    <details class="sezione-menu" {% if sezione_catalogo %}open{% endif %}>
-      <summary class="voce-menu voce-sezione {{ 'attiva' if sezione_catalogo }}">
-        <span class="icona-voce">&#128218;</span><span class="testo-voce">Catalogo</span>
+    {% set voce_entita_famiglie = ep.startswith('catalogo.') and not voce_arricchimento %}
+    {% set voce_regole = ep.startswith('archivio.regole') or ep.startswith('archivio.regola_') %}
+    {% set voce_ricostruzione = ep == 'livello0.ricostruzione' %}
+    {% set sezione_strutturare = voce_entita_famiglie or voce_arricchimento or voce_regole or voce_ricostruzione %}
+    <details class="sezione-menu" {% if sezione_strutturare %}open{% endif %}>
+      <summary class="voce-menu voce-sezione {{ 'attiva' if sezione_strutturare }}">
+        <span class="icona-voce">&#128218;</span><span class="testo-voce">Strutturare</span>
       </summary>
-      <a class="voce-menu sotto-voce {{ 'attiva' if sezione_catalogo and not voce_arricchimento }}" href="{{ url_for('catalogo.definizione') }}">
-        <span class="testo-voce">Definizione entità</span>
+      <p class="menu-descrittiva">Gli oggetti del dominio e i loro legami, in un'unica
+      ricostruzione ripetibile. Richiede l'inventario.</p>
+      <a class="voce-menu sotto-voce {{ 'attiva' if voce_entita_famiglie }}" href="{{ url_for('catalogo.definizione') }}">
+        <span class="testo-voce">Entità e famiglie</span>
       </a>
       <a class="voce-menu sotto-voce {{ 'attiva' if voce_arricchimento }}" href="{{ url_for('catalogo.arricchimento') }}">
         <span class="testo-voce">Arricchimento dati</span>
       </a>
-    </details>
-    {% set sezione_archivio = ep.startswith('archivio.') %}
-    <details class="sezione-menu" {% if sezione_archivio %}open{% endif %}>
-      <summary class="voce-menu voce-sezione {{ 'attiva' if sezione_archivio }}">
-        <span class="icona-voce">&#128193;</span><span class="testo-voce">Archivio logico</span>
-      </summary>
-      <a class="voce-menu sotto-voce {{ 'attiva' if ep.startswith('archivio.regole') or ep.startswith('archivio.regola_') }}" href="{{ url_for('archivio.regole') }}">
+      <a class="voce-menu sotto-voce {{ 'attiva' if voce_regole }}" href="{{ url_for('archivio.regole') }}">
         <span class="testo-voce">Regole di tipologia</span>
       </a>
-      <a class="voce-menu sotto-voce {{ 'attiva' if ep.startswith('archivio.consolidamento') }}" href="{{ url_for('archivio.consolidamento') }}">
-        <span class="testo-voce">Consolidamento</span>
-      </a>
-      <a class="voce-menu sotto-voce {{ 'attiva' if ep.startswith('archivio.esplora') or ep.startswith('archivio.documento') }}" href="{{ url_for('archivio.esplora') }}">
-        <span class="testo-voce">Esplora archivio</span>
-      </a>
-      <a class="voce-menu sotto-voce {{ 'attiva' if ep.startswith('archivio.completezza') }}" href="{{ url_for('archivio.completezza') }}">
-        <span class="testo-voce">Completezza per entità</span>
+      <a class="voce-menu sotto-voce {{ 'attiva' if voce_ricostruzione }}" href="{{ url_for('livello0.ricostruzione') }}">
+        <span class="testo-voce">Ricostruzione</span>
       </a>
     </details>
-    {% set sezione_validazione = ep.startswith('validazione.') %}
-    <details class="sezione-menu" {% if sezione_validazione %}open{% endif %}>
-      <summary class="voce-menu voce-sezione {{ 'attiva' if sezione_validazione }}">
-        <span class="icona-voce">&#10003;</span><span class="testo-voce">Validazione AI</span>
+    {% set voce_vigenza = ep.startswith('livello0.vigenza') or ep.startswith('livello0.disponi') %}
+    {% set voce_riconciliazione = ep.startswith('livello0.riconciliazione') %}
+    {% set voce_completezza = ep.startswith('archivio.completezza') %}
+    {% set voce_esplora = ep.startswith('archivio.esplora') or ep.startswith('archivio.documento') %}
+    {% set sezione_sorvegliare = voce_vigenza or voce_riconciliazione or voce_completezza or voce_esplora %}
+    <details class="sezione-menu" {% if sezione_sorvegliare %}open{% endif %}>
+      <summary class="voce-menu voce-sezione {{ 'attiva' if sezione_sorvegliare }}">
+        <span class="icona-voce">&#9878;</span><span class="testo-voce">Sorvegliare</span>
       </summary>
+      <p class="menu-descrittiva">Misure che restano vive: che cosa è superato, che cosa
+      non torna. Richiede la ricostruzione eseguita.</p>
+      <a class="voce-menu sotto-voce {{ 'attiva' if voce_vigenza }}" href="{{ url_for('livello0.vigenza') }}">
+        <span class="testo-voce">Vigenza</span>
+      </a>
+      <a class="voce-menu sotto-voce {{ 'attiva' if voce_riconciliazione }}" href="{{ url_for('livello0.riconciliazione') }}">
+        <span class="testo-voce">Riconciliazione</span>
+      </a>
+      <a class="voce-menu sotto-voce {{ 'attiva' if voce_completezza }}" href="{{ url_for('archivio.completezza') }}">
+        <span class="testo-voce">Completezza per entità</span>
+      </a>
+      <a class="voce-menu sotto-voce {{ 'attiva' if voce_esplora }}" href="{{ url_for('archivio.esplora') }}">
+        <span class="testo-voce">Esplora archivio</span>
+      </a>
+    </details>
+    {% set voce_consolidamento = ep.startswith('archivio.consolidamento') %}
+    {% set sezione_estendere = ep.startswith('validazione.') or voce_consolidamento %}
+    <details class="sezione-menu" {% if sezione_estendere %}open{% endif %}>
+      <summary class="voce-menu voce-sezione {{ 'attiva' if sezione_estendere }}">
+        <span class="icona-voce">&#10003;</span><span class="testo-voce">Estendere e consegnare</span>
+      </summary>
+      <p class="menu-descrittiva">L'agente lavora sul solo perimetro condivisibile;
+      l'export è il contratto verso la fase successiva.</p>
       <a class="voce-menu sotto-voce {{ 'attiva' if ep.startswith('validazione.perimetro') }}" href="{{ url_for('validazione.perimetro') }}">
         <span class="testo-voce">Perimetro e bozze</span>
       </a>
@@ -90,6 +112,22 @@
       <a class="voce-menu sotto-voce {{ 'attiva' if ep.startswith('validazione.impostazioni') }}" href="{{ url_for('validazione.impostazioni_analisi') }}">
         <span class="testo-voce">Impostazioni analisi</span>
       </a>
+      <a class="voce-menu sotto-voce {{ 'attiva' if voce_consolidamento }}" href="{{ url_for('archivio.consolidamento') }}">
+        <span class="testo-voce">Export di consegna</span>
+      </a>
+    </details>
+    {% set sezione_consultare = ep.startswith('consulta.') %}
+    <details class="sezione-menu" {% if sezione_consultare %}open{% endif %}>
+      <summary class="voce-menu voce-sezione {{ 'attiva' if sezione_consultare }}">
+        <span class="icona-voce">&#128214;</span><span class="testo-voce">Consultare</span>
+      </summary>
+      <p class="menu-descrittiva">La wiki: schede di famiglia generate dai dati, per
+      persone e per modelli. Richiede la ricostruzione.</p>
+      {% if 'consulta.indice' in current_app.view_functions %}
+      <a class="voce-menu sotto-voce {{ 'attiva' if sezione_consultare }}" href="{{ url_for('consulta.indice') }}">
+        <span class="testo-voce">Wiki delle famiglie</span>
+      </a>
+      {% endif %}
     </details>
     <a class="voce-menu {{ 'attiva' if ep == 'utenti.anagrafica' }}" href="{{ url_for('utenti.anagrafica') }}">
       <span class="icona-voce">&#128101;</span><span class="testo-voce">Utenti</span>

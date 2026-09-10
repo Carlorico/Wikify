@@ -18,14 +18,17 @@ from pathlib import Path
 # Consente l'avvio con "python app.py" da qualunque cartella corrente.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from flask import Flask, redirect, render_template, url_for  # noqa: E402
+from flask import Flask, current_app, redirect, render_template, url_for  # noqa: E402
 
 from core import db  # noqa: E402
+from core import demo as demo_mod  # noqa: E402
 from core import inventario as inv  # noqa: E402
 from modules.archivio import bp as archivio_bp  # noqa: E402
 from modules.catalogo import bp as catalogo_bp  # noqa: E402
+from modules.consulta import bp as consulta_bp  # noqa: E402
 from modules.dizionario import bp as dizionario_bp  # noqa: E402
 from modules.inventario import bp as inventario_bp  # noqa: E402
+from modules.livello0 import bp as livello0_bp  # noqa: E402
 from modules.manutenzione import bp as manutenzione_bp  # noqa: E402
 from modules.scansione import bp as scansione_bp  # noqa: E402
 from modules.storico import bp as storico_bp  # noqa: E402
@@ -41,8 +44,10 @@ def create_app():
 
     app.register_blueprint(archivio_bp, url_prefix="/archivio")
     app.register_blueprint(catalogo_bp, url_prefix="/catalogo")
+    app.register_blueprint(consulta_bp, url_prefix="/consulta")
     app.register_blueprint(dizionario_bp, url_prefix="/dizionario")
     app.register_blueprint(inventario_bp, url_prefix="/inventario")
+    app.register_blueprint(livello0_bp, url_prefix="/livello0")
     app.register_blueprint(manutenzione_bp, url_prefix="/manutenzione")
     app.register_blueprint(scansione_bp, url_prefix="/scansione")
     app.register_blueprint(storico_bp, url_prefix="/storico")
@@ -51,6 +56,13 @@ def create_app():
 
     # Tutte le pagine operative richiedono un utente connesso.
     app.before_request(utenti_mod.controllo_accesso)
+
+    # "current_app" nei template: serve alla sidebar per mostrare la voce
+    # di menu "Wiki delle famiglie" solo quando il blueprint consulta e'
+    # registrato (nasce in una fase successiva).
+    @app.context_processor
+    def inietta_app_corrente():
+        return {"current_app": current_app}
 
     # ------------------------------------------------------------------
     # PER AGGIUNGERE UN NUOVO MODULO (es. inventario, verifica XLS,
@@ -89,21 +101,37 @@ def create_app():
             ultima_esecuzione = conn.execute(
                 "SELECT * FROM inventario_esecuzioni ORDER BY id DESC LIMIT 1"
             ).fetchone()
+        demo_attiva = db.get_impostazione(
+            conn, demo_mod.CHIAVE_DEMO_ATTIVA, "0") == "1"
+        riepilogo_demo = demo_mod.riepilogo(conn) if demo_attiva else None
         conn.close()
         return render_template(
             "home.html", radice=radice, radice_ok=radice_ok, n_mappa=n_mappa,
             n_nuovi=n_nuovi, n_scomparsi=n_scomparsi,
             n_da_classificare=n_da_classificare, kpi=kpi,
-            ultima_esecuzione=ultima_esecuzione)
+            ultima_esecuzione=ultima_esecuzione,
+            demo_attiva=demo_attiva, riepilogo_demo=riepilogo_demo)
 
     return app
 
 
-def _apri_browser():
-    webbrowser.open("http://127.0.0.1:5000")
+# La porta predefinita resta la 5000. Su macOS puo' essere occupata dal
+# ricevitore AirPlay: in quel caso basta valorizzare WIKIFY_PORT prima
+# dell'avvio, senza disattivare funzioni di sistema.
+def _porta():
+    try:
+        return int(os.environ.get("WIKIFY_PORT", "5000"))
+    except ValueError:
+        return 5000
+
+
+def _apri_browser(porta):
+    webbrowser.open("http://127.0.0.1:%d" % porta)
 
 
 if __name__ == "__main__":
     app = create_app()
-    threading.Timer(1.2, _apri_browser).start()
-    app.run(host="127.0.0.1", port=5000, debug=False, use_reloader=False)
+    porta = _porta()
+    print("Wikify su http://127.0.0.1:%d" % porta)
+    threading.Timer(1.2, _apri_browser, args=(porta,)).start()
+    app.run(host="127.0.0.1", port=porta, debug=False, use_reloader=False)

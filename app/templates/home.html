@@ -4,6 +4,82 @@
 <h1>Dashboard</h1>
 
 {# ------------------------------------------------------------------ #}
+{# Modalità demo: card di richiamo e modale con il riepilogo           #}
+{# ------------------------------------------------------------------ #}
+{% if demo_attiva %}
+<div class="home-griglia" style="margin-bottom:18px">
+  <div class="home-card">
+    <h2>Modalità demo</h2>
+    <p>L'istanza corrente lavora sull'Archivio Demo, un archivio sintetico
+    di fantasia già composto: utile per esplorare Wikify prima di collegare
+    un archivio reale.</p>
+    <button type="button" class="bottone bottone-secondario" id="demo-apri">
+      Che cosa contiene la demo
+    </button>
+  </div>
+</div>
+
+<div id="demo-overlay" class="demo-overlay" hidden>
+  <div class="demo-modale scheda" role="dialog" aria-modal="true" aria-labelledby="demo-titolo">
+    <button type="button" class="demo-chiudi" id="demo-chiudi" aria-label="Chiudi">&times;</button>
+    <h2 id="demo-titolo">Modalità demo: che cosa contiene</h2>
+
+    <h3>I dati</h3>
+    <ul>
+      <li>Archivio documentale sintetico Idrometrica: {{ riepilogo_demo.n_file }} file
+      raccolti in {{ riepilogo_demo.n_famiglie }} famiglie.</li>
+      <li>Listino commerciale: {{ riepilogo_demo.n_articoli }} articoli.</li>
+      <li>Anagrafica articoli, per l'arricchimento dei dati.</li>
+    </ul>
+    <p class="nota-piccola">Dati interamente di fantasia, dichiarati tali: nessun
+    riferimento a prodotti, clienti o fornitori reali.</p>
+
+    <h3>Che cosa è già stato fatto</h3>
+    <ul>
+      <li>Inventario dell'archivio e riconoscimento delle famiglie dall'albero
+      delle cartelle.</li>
+      <li>Listino importato e riconciliato: copertura delle famiglie al
+      {{ riepilogo_demo.copertura_famiglie }}%.</li>
+      <li>Lingue, date e revisioni dei documenti derivate dai nomi file.</li>
+      <li>Vigenza calcolata: {{ riepilogo_demo.n_candidati }}
+      {{ "documento candidato" if riepilogo_demo.n_candidati == 1 else "documenti candidati" }}
+      ad aggiornamento.</li>
+      <li>Scansione dei contenuti eseguita: {{ riepilogo_demo.n_segnalazioni_scansione }}
+      segnalazioni di riservatezza.</li>
+    </ul>
+
+    <h3>Dove guardare</h3>
+    <ul>
+      <li><strong>Strutturare · Ricostruzione</strong>, per le misure di copertura.</li>
+      <li><strong>Sorvegliare · Vigenza</strong>, per le segnalazioni aperte.</li>
+      <li><strong>Consultare · Wiki delle famiglie</strong>, per le schede generate.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+(function () {
+  var overlay = document.getElementById("demo-overlay");
+  if (!overlay) { return; }
+  var apri = document.getElementById("demo-apri");
+  var chiudi = document.getElementById("demo-chiudi");
+  function mostra() { overlay.hidden = false; }
+  function nascondi() { overlay.hidden = true; }
+  if (apri) { apri.addEventListener("click", mostra); }
+  if (chiudi) { chiudi.addEventListener("click", nascondi); }
+  overlay.addEventListener("click", function (evento) {
+    if (evento.target === overlay) { nascondi(); }
+  });
+  document.addEventListener("keydown", function (evento) {
+    if (evento.key === "Escape") { nascondi(); }
+  });
+  var parametri = new URLSearchParams(window.location.search);
+  if (parametri.get("demo") === "avviata") { mostra(); }
+})();
+</script>
+{% endif %}
+
+{# ------------------------------------------------------------------ #}
 {# Impostazione della cartella archivio (una volta, modificabile poi) #}
 {# ------------------------------------------------------------------ #}
 {% if not radice_ok %}
