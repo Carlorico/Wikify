@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block titolo %}Riconciliazione, Wikify{% endblock %}
+{% block contenuto %}
+<div class="testata-pagina">
+  <h1>Riconciliazione fra archivio e listino</h1>
+  <div class="azioni-inline">
+    <a class="bottone bottone-secondario" href="{{ url_for('livello0.ricostruzione') }}">Ricostruzione</a>
+    <a class="bottone bottone-secondario" href="{{ url_for('livello0.vigenza') }}">Vigenza</a>
+  </div>
+</div>
+
+<p class="nota-piccola">Questa pagina raccoglie ciò che non ha trovato riscontro. Nulla di
+quanto segue è stato risolto in automatico: un abbinamento incerto non viene forzato,
+perché una relazione sbagliata è peggiore di una relazione assente.</p>
+
+<h2>Famiglie senza riscontro a listino ({{ copertura.famiglie_senza_articoli | length }})</h2>
+<p class="nota-piccola">Hanno documentazione nell'archivio ma nessun codice a listino. Le
+cause tipiche sono due: il prodotto è fuori catalogo, oppure la cartella riunisce più
+famiglie in un nome solo e nessuna sezione può abbinarla finché il criterio non le separa.</p>
+{% if copertura.famiglie_senza_articoli %}
+<div class="tabella-scroll">
+<table>
+  <tr><th>Famiglia</th><th>Cartella di origine</th></tr>
+  {% for f in copertura.famiglie_senza_articoli %}
+  <tr><td>{{ f.chiave }}</td><td class="rompi">{{ f.cartella_origine }}</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endif %}
+
+<h2>Articoli senza famiglia ({{ copertura.articoli_senza_famiglia | length }})</h2>
+<p class="nota-piccola">Sono a listino ma nessuna sezione li riconduce a una famiglia
+documentata: ricambi, accessori di servizio, oppure codici che seguono una sezione non
+abbinata.</p>
+{% if copertura.articoli_senza_famiglia %}
+<div class="tabella-scroll">
+<table>
+  <tr><th>Codice</th></tr>
+  {% for a in copertura.articoli_senza_famiglia %}
+  <tr><td>{{ a.chiave }}</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endif %}
+
+{% if anomalie %}
+<h2>Anomalie rilevate nell'import ({{ anomalie | length }})</h2>
+<div class="tabella-scroll">
+<table>
+  <tr><th>Tipo</th><th>Riferimento</th><th>Dettaglio</th></tr>
+  {% for a in anomalie %}
+  <tr><td>{{ a.tipo }}</td><td class="rompi">{{ a.riferimento }}</td><td>{{ a.dettaglio }}</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endif %}
+
+<h2>Documenti non ricondotti ad alcuna entità ({{ senza_entita | length }})</h2>
+<p class="nota-piccola">Cataloghi generali, certificazioni trasversali e note che non
+dichiarano i prodotti interessati. Per una parte è corretto che sia così: non tutto ciò che
+sta in archivio parla di un singolo prodotto.</p>
+{% if senza_entita %}
+<div class="tabella-scroll">
+<table>
+  <tr><th>Percorso</th><th>Ruolo temporale</th></tr>
+  {% for d in senza_entita %}
+  <tr><td class="rompi">{{ d.percorso_rel }}</td><td>{{ d.ruolo_temporale }}</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endif %}
+
+<h2>Scarto fra la data del file e quella dichiarata ({{ coerenza.casi | length }})</h2>
+<p class="nota-piccola">Aree di attenzione, non difetti acclarati. Il file è stato toccato in
+una data lontana da quella che il documento dichiara al proprio interno: può trattarsi di una
+modifica non riflessa nella data interna, di una riesportazione o di un semplice
+ricaricamento. {{ coerenza.in_migrazione }} documenti sono esclusi dal confronto perché la
+loro data di modifica appartiene a una migrazione massiva e non è informativa.</p>
+{% if coerenza.casi %}
+<div class="tabella-scroll">
+<table>
+  <tr><th>Documento</th><th>Data dichiarata</th><th>Ricavata da</th><th>Data del file</th><th>Scarto</th><th>Segnale</th></tr>
+  {% for c in coerenza.casi %}
+  <tr>
+    <td class="rompi">{{ c.percorso_rel }}</td>
+    <td>{{ c.data_documento }}</td>
+    <td>{{ c.data_origine }}</td>
+    <td>{{ c.data_modifica[:10] }}</td>
+    <td>{{ c.scarto_file_giorni }} gg</td>
+    <td><span class="badge {{ 'badge-media' if c.segnale_data == 'ritoccato_dopo' else 'badge-alta' }}">{{ c.segnale_data }}</span></td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+{% endif %}
+
+<h2>Lingua e gruppi di traduzione</h2>
+<p class="nota-piccola">{{ senza_lingua | length }} documenti senza lingua riconosciuta nel
+nome, {{ gruppi | length }} gruppi di traduzione con un solo documento. Non vengono
+accorpati per somiglianza: un gruppo di uno può essere una traduzione mancante oppure un
+nome che cambia da una lingua all'altra.</p>
+{% if senza_lingua or gruppi %}
+<div class="tabella-scroll">
+<table>
+  <tr><th>Documento</th><th>Caso</th></tr>
+  {% for d in senza_lingua %}
+  <tr><td class="rompi">{{ d.percorso_rel }}</td><td>lingua non riconosciuta</td></tr>
+  {% endfor %}
+  {% for g in gruppi %}
+  <tr><td class="rompi">{{ g.esempio }}</td><td>gruppo di traduzione di un solo documento</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endif %}
+{% endblock %}

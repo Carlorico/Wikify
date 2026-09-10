@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block titolo %}Wiki delle famiglie, Wikify{% endblock %}
+{% block contenuto %}
+<div class="testata-pagina">
+  <h1>Wiki delle famiglie</h1>
+  <div class="azioni-inline">
+    <a class="bottone bottone-secondario" href="{{ url_for('consulta.corpus') }}">Scarica il corpus (markdown)</a>
+  </div>
+</div>
+
+<p class="nota-piccola">Ogni scheda è un rendering deterministico della base dati: nessuna
+generazione libera, nessun servizio esterno. Il corpus raccoglie tutte le schede in
+profilo condivisibile, nella forma pensata per essere fornita a un modello.</p>
+
+{% if famiglie %}
+<div style="display:flex;flex-wrap:wrap;gap:14px">
+  {% for f in famiglie %}
+  <div class="scheda" style="flex:1 1 240px;min-width:220px">
+    <h3 style="margin-top:0"><a href="{{ url_for('consulta.scheda', eid=f.id) }}">{{ f.chiave }}</a></h3>
+    <div class="kpi-griglia">
+      <div class="kpi"><div class="numero">{{ f.n_articoli }}</div><div class="voce">Articoli</div></div>
+      <div class="kpi"><div class="numero">{{ f.n_documenti }}</div><div class="voce">Documenti</div></div>
+      <div class="kpi"><div class="numero {{ 'media' if f.n_candidati }}">{{ f.n_candidati }}</div><div class="voce">Da aggiornare</div></div>
+    </div>
+    {% if f.n_candidati %}
+    <span class="badge badge-media">{{ f.n_candidati }} candidato/i ad aggiornamento</span>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="scheda"><p>Nessuna famiglia attiva: eseguire la ricostruzione dalla sezione
+Strutturare prima di consultare la wiki.</p></div>
+{% endif %}
+{% endblock %}

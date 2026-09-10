@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block titolo %}Vigenza, Wikify{% endblock %}
+{% block contenuto %}
+<div class="testata-pagina">
+  <h1>Vigenza dei documenti</h1>
+  <div class="azioni-inline">
+    <a class="bottone bottone-secondario" href="{{ url_for('livello0.ricostruzione') }}">Ricostruzione</a>
+  </div>
+</div>
+
+<p class="nota-piccola">Un documento è <strong>candidato ad aggiornamento</strong> quando
+esiste, riferita alla stessa entità, una nota tecnica con data posteriore alla sua. La
+segnalazione non dice che il documento è obsoleto: dice che merita una verifica da parte di
+chi lo presidia. Marcarla come «ignorata» è un esito legittimo, e sopravvive a ogni
+ricalcolo successivo.</p>
+
+<div class="kpi-griglia">
+  <div class="kpi"><div class="numero {{ 'media' if misura.segnalazioni_aperte }}">{{ misura.segnalazioni_aperte }}</div><div class="voce">Segnalazioni aperte</div></div>
+  <div class="kpi"><div class="numero">{{ misura.segnalazioni_disposte }}</div><div class="voce">Già disposte</div></div>
+  <div class="kpi"><div class="numero">{{ misura.scarto_mediano_giorni }}</div><div class="voce">Scarto mediano in giorni</div></div>
+  <div class="kpi"><div class="numero {{ 'media' if misura.copertura_datazione < 100 }}">{{ misura.copertura_datazione }}%</div><div class="voce">Copertura di datazione</div></div>
+</div>
+
+{% if misura.elenco %}
+<h2>Aperte, dallo scarto maggiore</h2>
+<div class="tabella-scroll">
+<table>
+  <tr>
+    <th>Entità</th><th>Documento</th><th>Lingua</th><th>Data</th>
+    <th>Superato da</th><th>Del</th><th>Scarto</th><th>Disposizione</th>
+  </tr>
+  {% for s in misura.elenco %}
+  <tr>
+    <td>{{ s.entita or "&mdash;" | safe }}</td>
+    <td class="rompi">{{ s.documento }}</td>
+    <td>{{ s.lingua or "&mdash;" | safe }}</td>
+    <td>{{ s.data_documento }}</td>
+    <td class="rompi">{{ s.causa }}</td>
+    <td>{{ s.data_causa }}</td>
+    <td><span class="badge {{ 'badge-alta' if s.scarto_giorni > 365 else 'badge-media' }}">{{ s.scarto_giorni }} gg</span></td>
+    <td>
+      <form method="post" action="{{ url_for('livello0.disponi', seg_id=s.id) }}">
+        <input type="text" name="nota" placeholder="nota (facoltativa)" style="width:150px">
+        <button class="bottone-piccolo" type="submit" name="stato" value="confermata">Conferma</button>
+        <button class="bottone-piccolo bottone-secondario" type="submit" name="stato" value="ignorata">Ignora</button>
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+{% else %}
+<p class="nota-piccola">Nessuna segnalazione aperta. Se anche la copertura di datazione è
+bassa, però, l'assenza di segnalazioni non significa che i documenti siano allineati:
+significa che per la maggior parte di essi non è stato possibile stabilire una data.</p>
+{% endif %}
+
+{% if disposte %}
+<h2>Disposte</h2>
+<div class="tabella-scroll">
+<table>
+  <tr><th>Stato</th><th>Documento</th><th>Nota</th><th>Chi</th><th>Quando</th><th></th></tr>
+  {% for s in disposte %}
+  <tr>
+    <td><span class="badge {{ 'badge-riservato' if s.stato == 'confermata' else 'badge-off' }}">{{ s.stato }}</span></td>
+    <td class="rompi">{{ s.documento }}</td>
+    <td>{{ s.nota }}</td>
+    <td>{{ s.utente }}</td>
+    <td>{{ s.data_disposizione }}</td>
+    <td>
+      <form method="post" action="{{ url_for('livello0.disponi', seg_id=s.id) }}">
+        <button class="bottone-piccolo bottone-secondario" type="submit" name="stato" value="aperta">Riapri</button>
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+{% endif %}
+{% endblock %}

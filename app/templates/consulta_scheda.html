@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block titolo %}Famiglia {{ scheda.chiave }}, Wikify{% endblock %}
+{% block contenuto %}
+<div class="testata-pagina">
+  <h1>Famiglia {{ scheda.chiave }}</h1>
+  <div class="azioni-inline">
+    {% if scheda.profilo == 'condivisibile' %}
+    <a class="bottone bottone-secondario" href="{{ url_for('consulta.scheda', eid=scheda.id) }}">Vista interna</a>
+    {% else %}
+    <a class="bottone bottone-secondario" href="{{ url_for('consulta.scheda', eid=scheda.id, profilo='condivisibile') }}">Vista condivisibile</a>
+    {% endif %}
+    <a class="bottone bottone-secondario" href="{{ url_for('consulta.scheda_md', eid=scheda.id) }}">Scarica scheda (markdown)</a>
+    <a class="bottone bottone-secondario" href="{{ url_for('consulta.indice') }}">Torna all'elenco</a>
+  </div>
+</div>
+
+<p class="nota-piccola">Profilo corrente: <strong>{{ scheda.profilo }}</strong>.
+{% if scheda.profilo == 'condivisibile' %}Gli attributi non pubblici sono sostituiti dal
+segnaposto «[riservato]»; i documenti a riservatezza riservata compaiono solo per
+titolo, non incluso il contenuto.{% else %}Tutto è visibile: i blocchi non pubblici
+restano comunque marcati come tali.{% endif %}</p>
+
+<div class="scheda">
+  <table>
+    <tr><th style="width:220px">Percorso di origine</th><td class="rompi">{{ scheda.percorso_origine or "(nessuno)" }}</td></tr>
+    <tr><th>Stato</th><td>{{ scheda.stato }}</td></tr>
+  </table>
+</div>
+
+<h2>Articoli ({{ scheda.articoli | length }})</h2>
+{% if scheda.articoli %}
+<div class="tabella-scroll">
+<table>
+  <tr><th>Codice</th><th>Descrizione</th></tr>
+  {% for art in scheda.articoli %}
+  <tr>
+    <td><strong>{{ art.chiave }}</strong></td>
+    <td>
+      {% if art.attributi %}
+      {% for a in art.attributi %}
+      <div>{{ a.nome }}: {{ a.valore }}{% if a.visibilita != 'pubblica' %}
+        <span class="badge {{ 'badge-riservato' if a.visibilita == 'riservata' else 'badge-off' }}">{{ a.visibilita }}</span>
+      {% endif %}</div>
+      {% endfor %}
+      {% else %}
+      <span class="nota-piccola">nessun attributo registrato</span>
+      {% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+{% else %}
+<p class="nota-piccola">Nessun articolo raccolto da questa famiglia.</p>
+{% endif %}
+
+<h2>Documenti</h2>
+{% if scheda.documenti %}
+{% for gruppo in scheda.documenti %}
+<h3>{{ gruppo.gruppo }}</h3>
+<div class="tabella-scroll">
+<table>
+  <tr><th>Documento</th><th>Lingua</th><th>Revisione</th><th>Data</th><th>Vigenza</th><th>Riservatezza</th></tr>
+  {% for d in gruppo.documenti %}
+  <tr>
+    <td class="rompi">{{ d.nome }}</td>
+    {% if d.escluso %}
+    <td colspan="4"><span class="nota-piccola">{{ d.nota }}</span></td>
+    <td><span class="badge badge-riservato">riservato</span></td>
+    {% else %}
+    <td>{{ d.lingua or "&mdash;" | safe }}</td>
+    <td>{{ d.revisione or "&mdash;" | safe }}</td>
+    <td>{{ d.data_documento or "&mdash;" | safe }}</td>
+    <td>
+      <span class="badge {{ 'badge-on' if d.stato_vigenza == 'vigente' else ('badge-media' if d.stato_vigenza == 'da_aggiornare' else 'badge-off') }}">{{ d.stato_vigenza }}</span>
+    </td>
+    <td>
+      {% if d.riservatezza %}<span class="badge badge-{{ d.riservatezza }}">{{ d.riservatezza }}</span>{% endif %}
+      {% if d.avviso %}<div class="nota-piccola">{{ d.avviso }}</div>{% endif %}
+    </td>
+    {% endif %}
+  </tr>
+  {% endfor %}
+</table>
+</div>
+{% endfor %}
+{% else %}
+<p class="nota-piccola">Nessun documento collegato a questa famiglia.</p>
+{% endif %}
+
+<h2>Note applicabili ({{ scheda.note_applicabili | length }})</h2>
+{% if scheda.note_applicabili %}
+<ul>
+{% for n in scheda.note_applicabili %}
+<li>{{ n.nome }} (data {{ n.data_documento or "n/d" }}, lingua {{ n.lingua or "n/d" }})</li>
+{% endfor %}
+</ul>
+{% else %}
+<p class="nota-piccola">Nessuna nota di aggiornamento collegata a questa famiglia.</p>
+{% endif %}
+
+<h2>Avvisi di vigenza ({{ scheda.avvisi_vigenza | length }})</h2>
+{% if scheda.avvisi_vigenza %}
+<ul>
+{% for a in scheda.avvisi_vigenza %}
+<li>{{ a.documento }}: risulta superato da {{ a.causa }} (scarto {{ a.scarto_giorni }} giorni)</li>
+{% endfor %}
+</ul>
+{% else %}
+<p class="nota-piccola">Nessuna segnalazione aperta per questa famiglia.</p>
+{% endif %}
+
+<h2>Completezza per lingua</h2>
+{% if scheda.completezza %}
+{% for lingua, gruppi in scheda.completezza.items() %}
+<p class="nota-piccola"><strong>{{ lingua }}</strong>:
+{% for g in gruppi %}«{{ g.gruppo_traduzione }}»{% if not loop.last %}, {% endif %}{% endfor %}
+presente in questa sola lingua.</p>
+{% endfor %}
+{% else %}
+<p class="nota-piccola">Nessuna incompletezza di traduzione rilevata per questa famiglia.</p>
+{% endif %}
+{% endblock %}

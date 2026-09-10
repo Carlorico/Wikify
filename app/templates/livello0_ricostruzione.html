@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block titolo %}Base deterministica, Wikify{% endblock %}
+{% block contenuto %}
+<div class="testata-pagina">
+  <h1>Base deterministica, ricostruzione</h1>
+  <div class="azioni-inline">
+    <a class="bottone bottone-secondario" href="{{ url_for('livello0.vigenza') }}">Vigenza</a>
+    <a class="bottone bottone-secondario" href="{{ url_for('livello0.riconciliazione') }}">Riconciliazione</a>
+  </div>
+</div>
+
+<p class="nota-piccola">La catena deriva le famiglie dall'albero dell'archivio, crea gli
+articoli dal listino, ricava la relazione fra i due dalle righe di sezione, attribuisce
+lingua, data e revisione a ciascun documento e calcola la vigenza. Tutto da regole
+dichiarate: nessun servizio esterno, nessuna interpretazione del contenuto. La
+ricostruzione è idempotente: rieseguirla è sempre sicuro e non duplica nulla.</p>
+
+{% if not radice_ok %}
+<div class="avviso avviso-attenzione">Cartella dell'archivio non impostata o non
+raggiungibile. Impostarla dalla Dashboard prima di procedere.</div>
+{% endif %}
+
+<div class="scheda">
+  <form method="post" enctype="multipart/form-data">
+    <label for="listino">Listino in formato XLSX</label>
+    <input type="file" id="listino" name="listino" accept=".xlsx,.xlsm">
+    <p class="aiuto">Il file viene letto e non conservato. Le righe prive di codice sono
+    trattate come intestazioni di gruppo: aprono il contesto di famiglia a cui vengono
+    ricondotti i codici che seguono. L'intestazione delle colonne viene cercata e non
+    presunta, così un foglio con il titolo sulla prima riga non fa fallire l'import.
+    {% if ultimo_listino %}Ultimo listino importato:
+    <strong>{{ ultimo_listino.nome_file }}</strong> ({{ ultimo_listino.data }}). Lasciando
+    il campo vuoto la catena viene rieseguita senza reimportarlo.{% endif %}</p>
+    <div style="margin-top:14px">
+      <button type="submit" {% if not radice_ok %}disabled{% endif %}>Esegui ricostruzione</button>
+    </div>
+  </form>
+</div>
+
+<h2>Copertura della riconciliazione</h2>
+<div class="kpi-griglia">
+  <div class="kpi"><div class="numero">{{ copertura.famiglie }}</div><div class="voce">Famiglie derivate</div></div>
+  <div class="kpi"><div class="numero">{{ copertura.articoli }}</div><div class="voce">Articoli a catalogo</div></div>
+  <div class="kpi"><div class="numero {{ 'media' if copertura.copertura_famiglie < 100 }}">{{ copertura.copertura_famiglie }}%</div><div class="voce">Famiglie con almeno un articolo</div></div>
+  <div class="kpi"><div class="numero {{ 'media' if copertura.copertura_articoli < 100 }}">{{ copertura.copertura_articoli }}%</div><div class="voce">Articoli con una famiglia</div></div>
+</div>
+
+<h2>Vigenza</h2>
+<div class="kpi-griglia">
+  <div class="kpi"><div class="numero">{{ vigenza.descrittivi }}</div><div class="voce">Documenti descrittivi</div></div>
+  <div class="kpi"><div class="numero {{ 'media' if vigenza.copertura_datazione < 100 }}">{{ vigenza.copertura_datazione }}%</div><div class="voce">Copertura di datazione</div></div>
+  <div class="kpi"><div class="numero {{ 'media' if vigenza.segnalazioni_aperte }}">{{ vigenza.segnalazioni_aperte }}</div><div class="voce">Candidati ad aggiornamento</div></div>
+  <div class="kpi"><div class="numero">{{ vigenza.scarto_mediano_giorni }}</div><div class="voce">Scarto mediano in giorni</div></div>
+</div>
+<p class="nota-piccola">La copertura di datazione è l'indicatore che dice quanto è
+affidabile il controllo su questo archivio: la data non viene mai ricavata dalla data di
+modifica del file, che su un archivio migrato in blocco non è la data del documento, ma
+solo dal nome o da un'etichetta dichiarata al suo interno. Ciò che non è databile resta
+fuori dal calcolo ed è elencato in Riconciliazione.</p>
+
+<h2>Le due date</h2>
+<div class="kpi-griglia">
+  <div class="kpi"><div class="numero">{{ coerenza.quota_in_migrazione }}%</div><div class="voce">File con data di modifica da migrazione</div></div>
+  <div class="kpi"><div class="numero">{{ coerenza.coerenti }}</div><div class="voce">Le due date concordano</div></div>
+  <div class="kpi"><div class="numero {{ 'media' if coerenza.ritoccati }}">{{ coerenza.ritoccati }}</div><div class="voce">File toccati dopo la data dichiarata</div></div>
+  <div class="kpi"><div class="numero {{ 'media' if coerenza.anteriori }}">{{ coerenza.anteriori }}</div><div class="voce">File anteriori alla data dichiarata</div></div>
+</div>
+<p class="nota-piccola">Il documento ha due date, e vale la pena tenerle entrambe: quella
+dichiarata al suo interno, che è la sola usata per la vigenza, e quella di modifica del file,
+che non dice quando il documento è stato emesso ma dice quando qualcuno lo ha toccato. Lo
+scarto fra le due è un indizio: un documento che si dichiara vecchio ma il cui file risulta
+recente può essere stato modificato senza aggiornare la data interna, oppure riesportato.
+Non è una prova, ed è per questo che il sistema lo segnala senza trarne conseguenze.
+{% if coerenza.giornate_di_migrazione %}Le giornate riconosciute come migrazione massiva
+sono escluse dal confronto, perché su di esse la data del file non distingue un documento
+dall'altro:
+{% for giorno, n in coerenza.giornate_di_migrazione %}<strong>{{ giorno }}</strong> ({{ n }} file){% if not loop.last %}, {% endif %}{% endfor %}.{% endif %}</p>
+
+<h2>Lingua e traduzioni</h2>
+<div class="kpi-griglia">
+  <div class="kpi"><div class="numero {{ 'media' if senza_lingua }}">{{ senza_lingua }}</div><div class="voce">Documenti senza lingua riconosciuta</div></div>
+  <div class="kpi"><div class="numero {{ 'media' if gruppi_incompleti }}">{{ gruppi_incompleti | length }}</div><div class="voce">Gruppi di traduzione di un solo documento</div></div>
+</div>
+<p class="nota-piccola">I documenti non vengono mai accorpati per somiglianza del nome: un
+gruppo con un solo elemento può significare una traduzione mancante oppure un nome che
+cambia da una lingua all'altra, e sono due problemi diversi che meritano risposte diverse.</p>
+
+{% if esito %}
+<h2>Esito dell'ultima esecuzione</h2>
+<div class="kpi-griglia">
+  <div class="kpi"><div class="numero">{{ esito.famiglie.trovate }}</div><div class="voce">Famiglie riconosciute</div></div>
+  <div class="kpi"><div class="numero">{{ esito.documenti.documenti }}</div><div class="voce">Documenti censiti</div></div>
+  <div class="kpi"><div class="numero">{{ esito.legami.da_percorso }}</div><div class="voce">Agganci dal percorso</div></div>
+  <div class="kpi"><div class="numero">{{ esito.legami.da_contenuto }}</div><div class="voce">Agganci da elenco dichiarato</div></div>
+  <div class="kpi"><div class="numero">{{ esito.legami.multipli }}</div><div class="voce">Documenti su più entità</div></div>
+</div>
+{% if esito.listino %}
+<div class="kpi-griglia">
+  <div class="kpi"><div class="numero">{{ esito.listino.conteggi.sezioni }}</div><div class="voce">Righe di sezione lette</div></div>
+  <div class="kpi"><div class="numero">{{ esito.listino.conteggi.sezioni_abbinate }}</div><div class="voce">Sezioni abbinate a una famiglia</div></div>
+  <div class="kpi"><div class="numero">{{ esito.listino.conteggi.nuovi_articoli }}</div><div class="voce">Articoli creati</div></div>
+  <div class="kpi"><div class="numero {{ 'media' if esito.listino.anomalie }}">{{ esito.listino.anomalie | length }}</div><div class="voce">Anomalie di import</div></div>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}
